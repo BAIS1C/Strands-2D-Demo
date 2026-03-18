@@ -10,7 +10,7 @@
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   z-index: 9999;
-  padding-top: var(--space-nav-h);
+  padding-top: 0;
 }
 .bootText {
   font: 400 13px var(--font-display);
@@ -38,8 +38,8 @@
 /* ═══ DESKTOP ═══ */
 .desktop {
   width: 100vw;
-  height: calc(100vh - var(--space-nav-h));
-  margin-top: var(--space-nav-h);
+  height: 100vh;
+  margin-top: 0;
   display: flex; flex-direction: column;
   background: var(--c-bg);
   position: relative;
@@ -110,14 +110,14 @@
   animation: windowOpen 0.3s var(--ease-out);
   z-index: 10;
 }
-.window[data-window="chat"] { top: 20px; left: 100px; width: min(540px, calc(100vw - 30px)); height: min(480px, calc(100vh - var(--space-nav-h) - 80px)); }
-.window[data-window="doc"] { top: 60px; right: 24px; width: min(400px, calc(100vw - 30px)); height: min(340px, calc(100vh - var(--space-nav-h) - 140px)); }
-.window[data-window="puzzle"] { top: 20px; left: 80px; width: min(600px, calc(100vw - 20px)); height: min(420px, calc(100vh - var(--space-nav-h) - 80px)); z-index: 20; }
-.window[data-window="pattern"] { top: 20px; left: 80px; width: min(580px, calc(100vw - 20px)); height: min(480px, calc(100vh - var(--space-nav-h) - 80px)); z-index: 20; }
+.window[data-window="chat"] { top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(540px, calc(100vw - 30px)); height: min(480px, calc(100vh - 100px)); }
+.window[data-window="doc"] { top: 50%; left: 55%; transform: translate(-50%, -50%); width: min(400px, calc(100vw - 30px)); height: min(340px, calc(100vh - 160px)); }
+.window[data-window="puzzle"] { top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(600px, calc(100vw - 20px)); height: min(420px, calc(100vh - 100px)); z-index: 20; }
+.window[data-window="pattern"] { top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(580px, calc(100vw - 20px)); height: min(480px, calc(100vh - 100px)); z-index: 20; }
 
 @keyframes windowOpen {
-  from { opacity: 0; transform: scale(0.95) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .windowHeader {
@@ -362,7 +362,7 @@
 }
 
 .toast {
-  position: fixed; top: calc(var(--space-nav-h) + 12px); right: 20px;
+  position: fixed; top: 12px; right: 20px;
   background: rgba(26,27,31,0.95);
   border: 1px solid var(--c-pink);
   border-radius: 10px; padding: 14px 18px;
@@ -388,14 +388,14 @@
   .window[data-window="chat"],
   .window[data-window="puzzle"],
   .window[data-window="pattern"] {
-    top: 4px; left: 4px;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: calc(100vw - 8px);
-    height: calc(100vh - var(--space-nav-h) - 60px);
+    height: calc(100vh - 60px);
   }
   .window[data-window="doc"] {
-    top: 4px; left: 4px;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: calc(100vw - 8px);
-    height: calc(100vh - var(--space-nav-h) - 60px);
+    height: calc(100vh - 60px);
   }
   .icons { top: 8px; left: 8px; }
   .patternGrid { grid-template-columns: repeat(4, 44px); gap: 4px; }
