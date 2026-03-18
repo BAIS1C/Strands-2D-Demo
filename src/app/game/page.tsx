@@ -676,6 +676,41 @@ function GameDesktop({ playerData }: { playerData: PlayerData }) {
             <div className={styles.iconGlyph}>📄</div>
             <span className={styles.iconLabel}>Document</span>
           </button>
+          <button className={styles.icon} onClick={() => { toast('2042 — Arcade access locked. Complete Signal Reconstruction first.'); glitch(); }}>
+            <div className={styles.iconGlyph}>🕹</div>
+            <span className={styles.iconLabel}>2042</span>
+          </button>
+          <button className={styles.icon} onClick={() => { toast('Circuit Sync — Available after Messages sequence.'); }}>
+            <div className={styles.iconGlyph}>⚡</div>
+            <span className={styles.iconLabel}>Circuit Sync</span>
+          </button>
+          <button className={styles.icon} onClick={() => { toast('Proper Gander — Broadcast fragments locked. Solve Circuit Sync to unlock.'); }}>
+            <div className={styles.iconGlyph}>📡</div>
+            <span className={styles.iconLabel}>Proper Gander</span>
+          </button>
+          <button className={styles.icon} onClick={() => { toast('Mymories — Shard storage initialising...'); }}>
+            <div className={styles.iconGlyph}>🧠</div>
+            <span className={styles.iconLabel}>Mymories</span>
+          </button>
+          <button className={styles.icon} onClick={() => { toast('EveryWear — Desktop client upgrade. Available post-Season 0.'); }}>
+            <div className={styles.iconGlyph}>🖥</div>
+            <span className={styles.iconLabel}>EveryWear</span>
+          </button>
+          <button className={styles.icon} onClick={() => { toast('HoloLock — Slicing mechanic. Requires active quest.'); glitch(); }}>
+            <div className={styles.iconGlyph}>🔓</div>
+            <span className={styles.iconLabel}>HoloLock</span>
+          </button>
+        </div>
+        {/* Secondary icons — bottom-right cluster */}
+        <div className={styles.icons} style={{ top: 'auto', bottom: 80, left: 'auto', right: 24 }}>
+          <button className={styles.icon} onClick={() => { toast('System — No accessible files.'); }}>
+            <div className={styles.iconGlyph}>💻</div>
+            <span className={styles.iconLabel}>My Terminal</span>
+          </button>
+          <button className={styles.icon} onClick={() => { toast('Bin empty. SOVcorp data retention policy: nothing is ever truly deleted.'); }}>
+            <div className={styles.iconGlyph}>🗑</div>
+            <span className={styles.iconLabel}>Recycle Bin</span>
+          </button>
         </div>
 
         {/* CHAT WINDOW */}
@@ -821,6 +856,9 @@ function GameDesktop({ playerData }: { playerData: PlayerData }) {
       {/* Taskbar */}
       <div className={styles.taskbar}>
         <button className={`${styles.taskbarItem} ${showChat ? styles.taskbarActive : ''}`} onClick={handleOpenChat}>💬 Messages</button>
+        {showDoc && <button className={`${styles.taskbarItem} ${styles.taskbarActive}`}>📄 Document</button>}
+        {showPuzzle && <button className={`${styles.taskbarItem} ${styles.taskbarActive}`}>⚡ Circuit Sync</button>}
+        {showPattern && <button className={`${styles.taskbarItem} ${styles.taskbarActive}`}>🧩 Pattern</button>}
         <span className={styles.taskbarClock}>{new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
       </div>
     </div>
