@@ -1,0 +1,89 @@
+/* ─── Inner layout: cover + text side by side ─── */
+.inner {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+.coverWrap {
+  flex-shrink: 0;
+}
+
+.cover {
+  width: 180px;
+  height: auto;
+  clip-path: var(--clip-card-inner);
+  border: 1px solid rgba(249, 225, 0, 0.2);
+  transition: transform 0.3s var(--ease-out), box-shadow 0.3s;
+}
+
+.cover:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 32px rgba(249, 225, 0, 0.12);
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+}
+
+.cardTitle {
+  font: 800 18px var(--font-display);
+  letter-spacing: 1px;
+  color: var(--c-yellow);
+  margin-bottom: 12px;
+}
+
+.body {
+  color: var(--c-sub);
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+
+.quote {
+  font: 900 20px var(--font-display);
+  letter-spacing: 2px;
+  line-height: 1.6;
+  color: var(--c-text);
+  margin-bottom: 20px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(249, 225, 0, 0.15);
+}
+
+.quoteAccent {
+  color: var(--c-yellow);
+}
+
+.bookLink {
+  display: inline-block;
+  padding: 8px 20px;
+  font: 700 11px var(--font-display);
+  letter-spacing: 2px;
+  border: 1px solid var(--c-yellow);
+  color: var(--c-yellow);
+  text-decoration: none;
+  clip-path: var(--clip-button-sm);
+  transition: background 0.2s;
+}
+
+.bookLink:hover {
+  background: rgba(249, 225, 0, 0.08);
+}
+
+/* ─── Responsive: stack on mobile ─── */
+@media (max-width: 640px) {
+  .inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .cover {
+    width: 140px;
+  }
+
+  .quote {
+    font-size: 16px;
+  }
+}
