@@ -221,8 +221,29 @@ export default function AuthGate({ onReady }: AuthGateProps) {
             No wallet. No email. No password.
           </p>
           {error && <p className={styles.entryError}>{error}</p>}
+          <button
+            className={styles.connectBtn}
+            onClick={() => {
+              handleTGAuth({
+                id: 999999999,
+                first_name: 'Demo',
+                last_name: 'User',
+                username: 'demo_visitor',
+                photo_url: '',
+                auth_date: Math.floor(Date.now() / 1000),
+                hash: 'dev_bypass',
+              });
+            }}
+            style={{ marginTop: '12px', background: 'rgba(0,194,255,0.08)', borderColor: 'rgba(0,194,255,0.3)' }}
+          >
+            <span className={styles.connectIcon}>{'>'}_</span>
+            <span className={styles.connectLabel}>ENTER DEMO MODE</span>
+          </button>
+          <p className={styles.entryNote} style={{ marginTop: '8px', opacity: 0.5 }}>
+            Skip Telegram auth. Explore the desktop experience directly.
+          </p>
           <p className={styles.entryFallback}>
-            Don't have Telegram?{' '}
+            Don&apos;t have Telegram?{' '}
             <a href="https://telegram.org" target="_blank" rel="noopener noreferrer">
               Get it here
             </a>
