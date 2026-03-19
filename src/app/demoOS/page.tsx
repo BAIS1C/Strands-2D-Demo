@@ -61,50 +61,50 @@ const EvolutionContext = createContext<EvolutionState>({
    ═══════════════════════════════════════════════════════════════ */
 
 const APP_REGISTRY: AppManifest[] = [
-  // Standard OS — your normal desktop stuff
-  { id: 'my-computer',   label: 'My Computer',    icon: '💻', minWidth: 400, minHeight: 360, defaultWidth: 480, defaultHeight: 420, state: 'available' },
-  { id: 'my-pictures',   label: 'My Pictures',    icon: '🖼️', minWidth: 360, minHeight: 340, defaultWidth: 420, defaultHeight: 400, state: 'available' },
-  { id: 'my-videos',     label: 'My Videos',      icon: '🎬', minWidth: 360, minHeight: 340, defaultWidth: 420, defaultHeight: 400, state: 'available' },
-  { id: 'soundwave',     label: 'SoundWave',      icon: '🎵', minWidth: 300, minHeight: 200, defaultWidth: 340, defaultHeight: 280, state: 'available' },
+  // ── Standard OS — your normal desktop stuff (top of grid) ──
+  { id: 'my-computer',   label: 'My Computer',         icon: '💻', minWidth: 400, minHeight: 360, defaultWidth: 480, defaultHeight: 420, state: 'available' },
+  { id: 'documents',     label: 'Documents',            icon: '📄', minWidth: 360, minHeight: 440, defaultWidth: 420, defaultHeight: 480, state: 'available' },
+  { id: 'my-pictures',   label: 'My Pictures',          icon: '🖼️', minWidth: 360, minHeight: 340, defaultWidth: 420, defaultHeight: 400, state: 'available' },
+  { id: 'my-videos',     label: 'My Videos',            icon: '🎬', minWidth: 360, minHeight: 340, defaultWidth: 420, defaultHeight: 400, state: 'available' },
+  { id: 'soundwave',     label: 'Strands Sound Wave',   icon: '🎵', minWidth: 300, minHeight: 360, defaultWidth: 380, defaultHeight: 480, state: 'available' },
 
-  // Strands installed apps — available
-  { id: 'signal-reg',    label: 'Signal Reg',     icon: '📡', minWidth: 320, minHeight: 400, defaultWidth: 380, defaultHeight: 460, state: 'available' },
-  { id: 'messages',      label: 'Messages',       icon: '💬', minWidth: 360, minHeight: 480, defaultWidth: 420, defaultHeight: 540, state: 'available', hasNotification: true },
-  { id: 'bridge-app',    label: 'CPU-VPU Bridge', icon: '🌉', minWidth: 400, minHeight: 480, defaultWidth: 440, defaultHeight: 520, state: 'available' },
-  { id: 'codex',         label: 'The Codex',      icon: '📖', minWidth: 400, minHeight: 500, defaultWidth: 440, defaultHeight: 540, state: 'available' },
-  { id: 'signal-monitor',label: 'Signal Monitor', icon: '📺', minWidth: 440, minHeight: 500, defaultWidth: 480, defaultHeight: 540, state: 'available' },
-  { id: 'mymories',      label: 'Mymories',       icon: '🧠', minWidth: 360, minHeight: 440, defaultWidth: 400, defaultHeight: 480, state: 'available' },
+  // ── Strands installed apps — available ──
+  { id: 'signal-reg',    label: 'Signal Reg',           icon: '📡', minWidth: 320, minHeight: 400, defaultWidth: 380, defaultHeight: 460, state: 'available' },
+  { id: 'messages',      label: 'Messages',             icon: '💬', minWidth: 360, minHeight: 480, defaultWidth: 420, defaultHeight: 540, state: 'available', hasNotification: true },
+  { id: 'bridge-app',    label: 'CPU-VPU Bridge',       icon: '🌉', minWidth: 400, minHeight: 480, defaultWidth: 440, defaultHeight: 520, state: 'available' },
+  { id: 'codex',         label: 'The Codex',            icon: '📖', minWidth: 400, minHeight: 500, defaultWidth: 500, defaultHeight: 600, state: 'available' },
+  { id: 'signal-monitor',label: 'Signal Monitor',       icon: '📺', minWidth: 440, minHeight: 500, defaultWidth: 480, defaultHeight: 540, state: 'available' },
+  { id: 'mymories',      label: 'Mymories',             icon: '🧠', minWidth: 360, minHeight: 440, defaultWidth: 400, defaultHeight: 480, state: 'available' },
+  { id: 'myconsent',     label: 'MyConsent',             icon: '🛡️', minWidth: 400, minHeight: 400, defaultWidth: 460, defaultHeight: 480, state: 'available', syncGated: 600 },
 
-  // Sync-gated — show progress bar until threshold
-  { id: 'arcade-2042',   label: 'Arcade 2042',    icon: '🕹️', minWidth: 480, minHeight: 620, defaultWidth: 500, defaultHeight: 680, state: 'available', syncGated: 500 },
-  { id: 'circuit-sync',  label: 'Circuit Sync',   icon: '⚡', minWidth: 500, minHeight: 400, defaultWidth: 520, defaultHeight: 440, state: 'available', syncGated: 600 },
-  { id: 'holo-lock',     label: 'Holo-Lock',      icon: '🔓', minWidth: 520, minHeight: 500, defaultWidth: 540, defaultHeight: 540, state: 'available', syncGated: 700 },
+  // ── Sync-gated — show progress bar until threshold ──
+  { id: 'arcade-2042',   label: 'Arcade 2042',          icon: '🕹️', minWidth: 480, minHeight: 620, defaultWidth: 500, defaultHeight: 680, state: 'available', syncGated: 500 },
+  { id: 'holo-lock',     label: 'Holo-Lock',            icon: '🔓', minWidth: 520, minHeight: 500, defaultWidth: 540, defaultHeight: 540, state: 'available', syncGated: 700 },
 
-  // Locked apps — visible but inaccessible
-  { id: 'voice-sync',    label: 'Voice Sync',     icon: '🎙️', minWidth: 400, minHeight: 300, defaultWidth: 400, defaultHeight: 340, state: 'locked', lockMessage: 'Requires Signal Registration' },
-  { id: 'documents',     label: 'Documents',      icon: '📄', minWidth: 360, minHeight: 440, defaultWidth: 400, defaultHeight: 480, state: 'locked', lockMessage: 'Requires Signal Recovery' },
-  { id: 'cipher-tool',   label: 'Cipher Tool',    icon: '🔐', minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'locked', lockMessage: 'Requires Escalation Protocol' },
-  { id: 'trading-post',  label: 'Trading Post',   icon: '💰', minWidth: 360, minHeight: 440, defaultWidth: 400, defaultHeight: 480, state: 'locked', lockMessage: 'Bridge Level 5 Required' },
-  { id: 'signal-rush',   label: 'Signal Rush',    icon: '🚀', minWidth: 360, minHeight: 600, defaultWidth: 380, defaultHeight: 640, state: 'locked', lockMessage: 'Coming Soon' },
+  // ── Locked apps — visible but inaccessible ──
+  { id: 'voice-sync',    label: 'Voice Sync',           icon: '🎙️', minWidth: 400, minHeight: 300, defaultWidth: 400, defaultHeight: 340, state: 'locked', lockMessage: 'Requires Signal Registration' },
+  { id: 'cipher-tool',   label: 'Cipher Tool',          icon: '🔐', minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'locked', lockMessage: 'Requires Escalation Protocol' },
+  { id: 'trading-post',  label: 'Trading Post',         icon: '💰', minWidth: 360, minHeight: 440, defaultWidth: 400, defaultHeight: 480, state: 'locked', lockMessage: 'Bridge Level 5 Required' },
+  { id: 'signal-rush',   label: 'Signal Rush',          icon: '🚀', minWidth: 360, minHeight: 600, defaultWidth: 380, defaultHeight: 640, state: 'locked', lockMessage: 'Coming Soon' },
 
-  // Hidden — dashed borders, glitch teasers
-  { id: 'kasai-terminal', label: '???',           icon: '?',  minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'hidden' },
-  { id: 'portal',         label: 'The Portal',    icon: '🌀', minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'hidden' },
-  { id: 'ace-studio',     label: 'ACE Studio',    icon: '🎹', minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'hidden' },
+  // ── Hidden — dashed borders, glitch teasers ──
+  { id: 'kasai-terminal', label: '???',                 icon: '?',  minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'hidden' },
+  { id: 'portal',         label: 'The Portal',          icon: '🌀', minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'hidden' },
+  { id: 'ace-studio',     label: 'ACE Studio',          icon: '🎹', minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'hidden' },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
    NOTIFICATION TOAST — pops up when clicking locked icons
    ═══════════════════════════════════════════════════════════════ */
 
-function NotificationToast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+function NotificationToast({ message, toastKey, onDismiss }: { message: string; toastKey: number; onDismiss: () => void }) {
   useEffect(() => {
     const t = setTimeout(onDismiss, 3000);
     return () => clearTimeout(t);
-  }, [onDismiss]);
+  }, [toastKey, onDismiss]);
 
   return (
-    <div className={styles.toast}>
+    <div className={styles.toast} key={toastKey}>
       <span className={styles.toastIcon}>🔒</span>
       <span className={styles.toastMsg}>{message}</span>
     </div>
@@ -187,10 +187,26 @@ function AppContent({ appId }: { appId: string }) {
         </div>
       );
 
+    case 'documents':
+      return (
+        <div className={styles.appBody}>
+          <div className={styles.appHeader}>DOCUMENTS</div>
+          <div className={styles.fileList}>
+            <div className={styles.fileItem}><span>📁</span> Personal</div>
+            <div className={styles.fileItem}><span>📁</span> Work</div>
+            <div className={styles.fileItem}><span>📁</span> Signal Transcripts</div>
+            <div className={styles.fileItem}><span>📄</span> README_strands.txt</div>
+            <div className={styles.fileItem}><span>📄</span> bridge_calibration_notes.txt</div>
+            <div className={styles.fileItemDim}><span>📄</span> ▓▓▓_recovered_fragment_01.sig</div>
+            <div className={styles.fileItemDim}><span>🔒</span> classified_sovcorp_memo.enc — <em>Decryption pending</em></div>
+          </div>
+        </div>
+      );
+
     case 'soundwave':
       return (
         <div className={styles.appBody}>
-          <div className={styles.appHeader}>SOUNDWAVE</div>
+          <div className={styles.appHeader}>STRANDS SOUND WAVE</div>
           <div className={styles.musicPlayer}>
             <div className={styles.trackInfo}>
               <div className={styles.trackTitle}>Orbit Foreshadowing (Remix)</div>
@@ -210,6 +226,16 @@ function AppContent({ appId }: { appId: string }) {
               <div className={styles.progressFill} style={{ width: '35%' }} />
             </div>
             <div className={styles.trackTime}>1:12 / 3:28</div>
+            <div className={styles.playlist}>
+              <div className={styles.playlistHeader}>PLAYLIST</div>
+              <div className={`${styles.playlistItem} ${styles.playlistItemActive}`}><span>▶</span> Orbit Foreshadowing (Remix) — SpacemanTheDJ</div>
+              <div className={styles.playlistItem}><span>♫</span> Signal Decay — STRANDS OST</div>
+              <div className={styles.playlistItem}><span>♫</span> Substrate Drift — STRANDS OST</div>
+              <div className={styles.playlistItem}><span>♫</span> The Cracks Below — STRANDS OST</div>
+              <div className={styles.playlistItem}><span>♫</span> Neon Meridian — STRANDS OST</div>
+              <div className={styles.playlistItem}><span>♫</span> Ghost Frequency — STRANDS OST</div>
+              <div className={styles.playlistItemDim}><span>🔒</span> ACE Generated — <em>Unlock ACE Studio</em></div>
+            </div>
           </div>
         </div>
       );
@@ -299,6 +325,9 @@ function AppContent({ appId }: { appId: string }) {
       return (
         <div className={styles.appBody}>
           <div className={styles.appHeader}>THE CODEX</div>
+          <a href="https://demo.strandsnation.xyz/#codex" target="_blank" rel="noopener noreferrer" className={styles.codexLink}>
+            Open Full Codex on StrandsNation.xyz
+          </a>
           <div className={styles.codexEntries}>
             <div className={styles.codexEntry}>
               <div className={styles.codexTitle}>The Conflagrations</div>
@@ -364,13 +393,28 @@ function AppContent({ appId }: { appId: string }) {
         </div>
       );
 
-    case 'circuit-sync':
+    case 'myconsent':
       return (
         <div className={styles.appBody}>
-          <div className={styles.appHeader}>CIRCUIT SYNC // SIGNAL PATTERN</div>
-          <div className={styles.placeholderContent}>
-            <div className={styles.placeholderIcon}>⚡</div>
-            <div>Initialising pattern matrix...</div>
+          <div className={styles.appHeader}>MYCONSENT // DATA SOVEREIGNTY</div>
+          <div className={styles.consentPanel}>
+            <div className={styles.consentStatus}>
+              <span className={styles.consentDot} />
+              <span>Consent Protocol: ACTIVE</span>
+            </div>
+            <div className={styles.consentSection}>
+              <div className={styles.consentLabel}>Identity Data</div>
+              <div className={styles.consentRow}><span>Biometric Hash</span><span className={styles.consentGranted}>GRANTED</span></div>
+              <div className={styles.consentRow}><span>Signal Fingerprint</span><span className={styles.consentGranted}>GRANTED</span></div>
+              <div className={styles.consentRow}><span>Location Telemetry</span><span className={styles.consentDenied}>DENIED</span></div>
+            </div>
+            <div className={styles.consentSection}>
+              <div className={styles.consentLabel}>Behavioural Data</div>
+              <div className={styles.consentRow}><span>Interaction Patterns</span><span className={styles.consentGranted}>GRANTED</span></div>
+              <div className={styles.consentRow}><span>Cognitive Profiling</span><span className={styles.consentDenied}>DENIED</span></div>
+              <div className={styles.consentRow}><span>Emotional Mapping</span><span className={styles.consentPending}>PENDING</span></div>
+            </div>
+            <div className={styles.consentFooter}>Your data. Your rules. SOVcorp compliance: ENFORCED.</div>
           </div>
         </div>
       );
@@ -663,7 +707,12 @@ export default function DemoOSPage() {
   const [windows, setWindows] = useState<WindowState[]>([]);
   const [nextZ, setNextZ] = useState(100);
   const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; key: number } | null>(null);
+  const toastCounter = useRef(0);
+  const showToast = useCallback((msg: string) => {
+    toastCounter.current++;
+    setToast({ msg, key: toastCounter.current });
+  }, []);
   const [evo, setEvo] = useState<EvolutionState>({ era: '2026', syncValue: 375, bridgeLevel: 3 });
   const windowCounter = useRef(0);
 
@@ -746,8 +795,9 @@ export default function DemoOSPage() {
   if (!booted) return <BootSequence onComplete={() => setBooted(true)} />;
 
   // Separate apps into visible groups
-  const standardApps = APP_REGISTRY.filter(a => ['my-computer','my-pictures','my-videos','soundwave'].includes(a.id));
-  const strandsApps = APP_REGISTRY.filter(a => !['my-computer','my-pictures','my-videos','soundwave'].includes(a.id) && a.state !== 'hidden');
+  const STANDARD_IDS = ['my-computer','documents','my-pictures','my-videos','soundwave'];
+  const standardApps = APP_REGISTRY.filter(a => STANDARD_IDS.includes(a.id));
+  const strandsApps = APP_REGISTRY.filter(a => !STANDARD_IDS.includes(a.id) && a.state !== 'hidden');
   const hiddenApps = APP_REGISTRY.filter(a => a.state === 'hidden');
 
   return (
@@ -768,7 +818,7 @@ export default function DemoOSPage() {
             {/* Standard OS apps — top left */}
             <div className={styles.iconGroup}>
               {standardApps.map(app => (
-                <DesktopIcon key={app.id} app={app} onOpen={() => openWindow(app)} onLockedClick={setToastMsg} />
+                <DesktopIcon key={app.id} app={app} onOpen={() => openWindow(app)} onLockedClick={showToast} />
               ))}
             </div>
             {/* Separator */}
@@ -776,14 +826,14 @@ export default function DemoOSPage() {
             {/* Strands apps */}
             <div className={styles.iconGroup}>
               {strandsApps.map(app => (
-                <DesktopIcon key={app.id} app={app} onOpen={() => openWindow(app)} onLockedClick={setToastMsg} />
+                <DesktopIcon key={app.id} app={app} onOpen={() => openWindow(app)} onLockedClick={showToast} />
               ))}
             </div>
             {/* Hidden row */}
             <div className={styles.iconSep} />
             <div className={styles.iconGroupHidden}>
               {hiddenApps.map(app => (
-                <DesktopIcon key={app.id} app={app} onOpen={() => {}} onLockedClick={setToastMsg} />
+                <DesktopIcon key={app.id} app={app} onOpen={() => {}} onLockedClick={showToast} />
               ))}
             </div>
           </div>
@@ -803,7 +853,7 @@ export default function DemoOSPage() {
         </div>
 
         {/* Toast notification */}
-        {toastMsg && <NotificationToast message={toastMsg} onDismiss={() => setToastMsg(null)} />}
+        {toast && <NotificationToast message={toast.msg} toastKey={toast.key} onDismiss={() => setToast(null)} />}
 
         {/* Taskbar — pinned bottom */}
         <Taskbar windows={windows} activeWindowId={activeWindowId}

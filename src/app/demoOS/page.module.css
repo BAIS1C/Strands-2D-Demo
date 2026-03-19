@@ -171,38 +171,44 @@
   overflow: hidden;
 }
 
-/* ─── ICON GRID ─── */
+/* ─── ICON GRID — Windows-style column-first auto-arrange ─── */
 
 .iconGrid {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
   z-index: 1;
-  padding: 20px 20px 0 20px;
+  padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 2px 2px;
+  max-height: 100%;
+  width: auto;
 }
 
-/* Icon groups — flex-wrap rows */
+/* Icon groups — flow vertically then wrap to next column */
 .iconGroup {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
 }
 
-/* Separator between icon groups */
+/* Separator between icon groups — horizontal line in column layout */
 .iconSep {
-  width: 100%;
+  width: 84px;
   height: 1px;
-  background: linear-gradient(90deg, rgba(0, 194, 255, 0.08) 0%, rgba(0, 194, 255, 0.02) 60%, transparent 100%);
+  background: linear-gradient(90deg, transparent 10%, rgba(0, 194, 255, 0.1) 50%, transparent 90%);
   margin: 4px 0;
 }
 
-/* Hidden icons row */
+/* Hidden icons group */
 .iconGroupHidden {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
   opacity: 0.5;
 }
 
@@ -1066,6 +1072,179 @@
   color: var(--c-dim, #6b7280);
   text-align: center;
   letter-spacing: 1px;
+}
+
+/* ─── SOUNDWAVE PLAYLIST ─── */
+
+.playlist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  border-top: 1px solid rgba(0, 194, 255, 0.06);
+  padding-top: 8px;
+}
+
+.playlistHeader {
+  font: 600 8px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-dim, #6b7280);
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+
+.playlistItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font: 400 11px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-sub, #A0AEC0);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.playlistItem:hover {
+  background: rgba(0, 194, 255, 0.04);
+}
+
+.playlistItem span {
+  font-size: 10px;
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+}
+
+.playlistItemActive {
+  background: rgba(0, 194, 255, 0.06);
+  color: var(--c-accent, #00C2FF);
+}
+
+.playlistItemDim {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  font: 400 11px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-dim, #6b7280);
+  opacity: 0.5;
+}
+
+.playlistItemDim span {
+  font-size: 10px;
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+}
+
+/* ─── CODEX LINK ─── */
+
+.codexLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 10px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-accent, #00C2FF);
+  text-decoration: none;
+  letter-spacing: 0.5px;
+  padding: 6px 12px;
+  background: rgba(0, 194, 255, 0.04);
+  border: 1px solid rgba(0, 194, 255, 0.1);
+  border-radius: 6px;
+  transition: all 0.2s;
+  align-self: flex-start;
+}
+
+.codexLink:hover {
+  background: rgba(0, 194, 255, 0.08);
+  border-color: rgba(0, 194, 255, 0.2);
+  box-shadow: 0 0 12px rgba(0, 194, 255, 0.1);
+}
+
+/* ─── MYCONSENT PANEL ─── */
+
+.consentPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.consentStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 500 11px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-sub, #A0AEC0);
+  padding: 8px 12px;
+  background: rgba(0, 194, 255, 0.03);
+  border: 1px solid rgba(0, 194, 255, 0.06);
+  border-radius: 6px;
+}
+
+.consentDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00FF88;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+  flex-shrink: 0;
+}
+
+.consentSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.consentLabel {
+  font: 600 9px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-dim, #6b7280);
+  letter-spacing: 1.5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.consentRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  font: 400 12px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-sub, #A0AEC0);
+}
+
+.consentGranted {
+  font: 600 9px var(--font-display, 'Orbitron', monospace);
+  color: #00FF88;
+  letter-spacing: 1px;
+}
+
+.consentDenied {
+  font: 600 9px var(--font-display, 'Orbitron', monospace);
+  color: #FF3366;
+  letter-spacing: 1px;
+}
+
+.consentPending {
+  font: 600 9px var(--font-display, 'Orbitron', monospace);
+  color: #FFB800;
+  letter-spacing: 1px;
+  animation: consentBlink 2s ease-in-out infinite;
+}
+
+@keyframes consentBlink {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.consentFooter {
+  font: 400 10px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-dim, #6b7280);
+  text-align: center;
+  font-style: italic;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 /* ─── SIGNAL MONITOR ─── */
