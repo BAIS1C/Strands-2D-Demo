@@ -1059,6 +1059,12 @@
   background: rgba(255, 255, 255, 0.06);
   border-radius: 2px;
   overflow: hidden;
+  cursor: pointer;
+  transition: height 0.15s;
+}
+
+.progressTrack:hover {
+  height: 6px;
 }
 
 .progressFill {
@@ -1135,6 +1141,230 @@
   flex-shrink: 0;
   width: 14px;
   text-align: center;
+}
+
+/* ─── ACE STEP STUDIO (SoundWave) ─── */
+
+.aceStudio {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.aceLabel {
+  font: 700 10px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 3px;
+  color: var(--c-accent, #00C2FF);
+  text-align: center;
+}
+
+.aceDesc {
+  font: 400 11px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-sub, #A0AEC0);
+  text-align: center;
+  line-height: 1.5;
+  padding: 0 8px;
+}
+
+.aceForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.acePrompt,
+.aceLyrics {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(0, 194, 255, 0.1);
+  border-radius: 6px;
+  color: var(--c-text, #E2E8F0);
+  font: 400 12px var(--font-body, 'Rajdhani', sans-serif);
+  padding: 10px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.acePrompt:focus,
+.aceLyrics:focus {
+  border-color: rgba(0, 194, 255, 0.3);
+}
+
+.aceControls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.aceField {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 80px;
+}
+
+.aceField span {
+  font: 600 8px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 1px;
+  color: var(--c-dim, #6b7280);
+  text-transform: uppercase;
+}
+
+.aceField select,
+.aceField input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(0, 194, 255, 0.1);
+  border-radius: 4px;
+  color: var(--c-text, #E2E8F0);
+  font: 400 12px var(--font-body, 'Rajdhani', sans-serif);
+  padding: 6px 8px;
+  outline: none;
+}
+
+.aceGenerateBtn {
+  width: 100%;
+  padding: 12px;
+  font: 700 12px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 2px;
+  color: #0A0B0D;
+  background: var(--c-accent, #00C2FF);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  box-shadow: 0 0 20px rgba(0, 194, 255, 0.3);
+}
+
+.aceGenerateBtn:hover {
+  box-shadow: 0 0 30px rgba(0, 194, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.aceGenerateBtn:active {
+  transform: translateY(0);
+}
+
+.aceDemoNote {
+  font: 400 8px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-dim, #6b7280);
+  text-align: center;
+  letter-spacing: 1px;
+  opacity: 0.6;
+}
+
+/* ─── MYMORIES LANDING ─── */
+
+.mymoriesLanding {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.mymoriesHero {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.mymoriesIcon {
+  font-size: 36px;
+  margin-bottom: 6px;
+}
+
+.mymoriesTagline {
+  font: 600 12px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-text, #E2E8F0);
+  letter-spacing: 0.5px;
+}
+
+.mymoriesDesc {
+  font: 400 12px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-sub, #A0AEC0);
+  line-height: 1.6;
+  text-align: center;
+  padding: 0 8px;
+}
+
+.mymoriesFeatures {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: rgba(0, 194, 255, 0.03);
+  border: 1px solid rgba(0, 194, 255, 0.06);
+  border-radius: 6px;
+}
+
+.mymoriesFeature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 400 11px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-sub, #A0AEC0);
+}
+
+.mymoriesFeature span {
+  color: var(--c-accent, #00C2FF);
+  font-size: 8px;
+}
+
+.mymoriesNarrative {
+  font: 400 11px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-dim, #6b7280);
+  text-align: center;
+  line-height: 1.5;
+  font-style: italic;
+  padding: 0 12px;
+}
+
+.mymoriesInstallBtn {
+  display: block;
+  text-align: center;
+  padding: 12px;
+  font: 700 11px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 1.5px;
+  color: #0A0B0D;
+  background: var(--c-accent, #00C2FF);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s;
+  box-shadow: 0 0 20px rgba(0, 194, 255, 0.3);
+}
+
+.mymoriesInstallBtn:hover {
+  box-shadow: 0 0 30px rgba(0, 194, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.mymoriesDocsBtn {
+  display: block;
+  text-align: center;
+  padding: 10px;
+  font: 600 10px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 1px;
+  color: var(--c-accent, #00C2FF);
+  background: rgba(0, 194, 255, 0.05);
+  border: 1px solid rgba(0, 194, 255, 0.15);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.mymoriesDocsBtn:hover {
+  background: rgba(0, 194, 255, 0.1);
+  border-color: rgba(0, 194, 255, 0.25);
+}
+
+.mymoriesQuote {
+  font: 400 10px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-dim, #6b7280);
+  text-align: center;
+  font-style: italic;
+  opacity: 0.7;
 }
 
 /* ─── CODEX LINK ─── */

@@ -1,7 +1,21 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect, createContext, useContext } from 'react';
+import { useState, useCallback, useRef, useEffect, createContext, useContext, useMemo } from 'react';
 import styles from './page.module.css';
+import { playlist as generatedPlaylist } from '@/constants/playlist';
+
+/* ═══════════════════════════════════════════════════════════════
+   AUDIO TYPES — normalise the auto-generated playlist
+   ═══════════════════════════════════════════════════════════════ */
+
+type RawTrack = { src?: string; title?: string; artist?: string; ttl?: string; artst?: string; file?: string };
+type NormTrack = { file: string; title: string; artist: string };
+
+const normalizeTrack = (t: RawTrack): NormTrack => ({
+  file: t.file ?? t.src ?? '',
+  title: t.title ?? t.ttl ?? 'Unknown Track',
+  artist: t.artist ?? t.artst ?? '',
+});
 
 /* ═══════════════════════════════════════════════════════════════
    TYPES
@@ -58,6 +72,13 @@ const EvolutionContext = createContext<EvolutionState>({
 /* ═══════════════════════════════════════════════════════════════
    APP REGISTRY — Your Desktop in 2026
    Standard OS apps + installed Strands software
+
+   DEMO STAGING NOTE: This demoOS shows items UNLOCKED that would
+   normally require completing the quest line to access. The point
+   is wow factor — investors/visitors see the full capability without
+   having to play through the onboarding. SoundWave (ACE Step) and
+   other sync-gated/locked apps are set to 'available' here for demo.
+   In the real game, these gate behind Bridge Levels and Sync thresholds.
    ═══════════════════════════════════════════════════════════════ */
 
 const APP_REGISTRY: AppManifest[] = [
@@ -66,7 +87,8 @@ const APP_REGISTRY: AppManifest[] = [
   { id: 'documents',     label: 'Documents',            icon: '📄', minWidth: 360, minHeight: 440, defaultWidth: 420, defaultHeight: 480, state: 'available' },
   { id: 'my-pictures',   label: 'My Pictures',          icon: '🖼️', minWidth: 360, minHeight: 340, defaultWidth: 420, defaultHeight: 400, state: 'available' },
   { id: 'my-videos',     label: 'My Videos',            icon: '🎬', minWidth: 360, minHeight: 340, defaultWidth: 420, defaultHeight: 400, state: 'available' },
-  { id: 'soundwave',     label: 'Strands Sound Wave',   icon: '🎵', minWidth: 300, minHeight: 360, defaultWidth: 380, defaultHeight: 480, state: 'available' },
+  { id: 'music-player',  label: 'Music Player',          icon: '🎶', minWidth: 300, minHeight: 360, defaultWidth: 380, defaultHeight: 520, state: 'available' },
+  { id: 'soundwave',     label: 'SoundWave',             icon: '🎵', minWidth: 480, minHeight: 600, defaultWidth: 520, defaultHeight: 640, state: 'available' },
 
   // ── Strands installed apps — available ──
   { id: 'signal-reg',    label: 'Signal Reg',           icon: '📡', minWidth: 320, minHeight: 400, defaultWidth: 380, defaultHeight: 460, state: 'available' },
@@ -75,11 +97,11 @@ const APP_REGISTRY: AppManifest[] = [
   { id: 'codex',         label: 'The Codex',            icon: '📖', minWidth: 400, minHeight: 500, defaultWidth: 500, defaultHeight: 600, state: 'available' },
   { id: 'signal-monitor',label: 'Signal Monitor',       icon: '📺', minWidth: 440, minHeight: 500, defaultWidth: 480, defaultHeight: 540, state: 'available' },
   { id: 'mymories',      label: 'Mymories',             icon: '🧠', minWidth: 360, minHeight: 440, defaultWidth: 400, defaultHeight: 480, state: 'available' },
-  { id: 'myconsent',     label: 'MyConsent',             icon: '🛡️', minWidth: 400, minHeight: 400, defaultWidth: 460, defaultHeight: 480, state: 'available', syncGated: 600 },
+  { id: 'myconsent',     label: 'MyConsent',             icon: '🛡️', minWidth: 400, minHeight: 400, defaultWidth: 460, defaultHeight: 480, state: 'available' },
 
   // ── Sync-gated — show progress bar until threshold ──
-  { id: 'arcade-2042',   label: 'Arcade 2042',          icon: '🕹️', minWidth: 480, minHeight: 620, defaultWidth: 500, defaultHeight: 680, state: 'available', syncGated: 500 },
-  { id: 'holo-lock',     label: 'Holo-Lock',            icon: '🔓', minWidth: 520, minHeight: 500, defaultWidth: 540, defaultHeight: 540, state: 'available', syncGated: 700 },
+  { id: 'arcade-2042',   label: 'Arcade 2042',          icon: '🕹️', minWidth: 480, minHeight: 620, defaultWidth: 500, defaultHeight: 680, state: 'available' },
+  { id: 'holo-lock',     label: 'Holo-Lock',            icon: '🔓', minWidth: 520, minHeight: 500, defaultWidth: 540, defaultHeight: 540, state: 'available' },
 
   // ── Locked apps — visible but inaccessible ──
   { id: 'voice-sync',    label: 'Voice Sync',           icon: '🎙️', minWidth: 400, minHeight: 300, defaultWidth: 400, defaultHeight: 340, state: 'locked', lockMessage: 'Requires Signal Registration' },
@@ -90,7 +112,7 @@ const APP_REGISTRY: AppManifest[] = [
   // ── Hidden — dashed borders, glitch teasers ──
   { id: 'kasai-terminal', label: '???',                 icon: '?',  minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'hidden' },
   { id: 'portal',         label: 'The Portal',          icon: '🌀', minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'hidden' },
-  { id: 'ace-studio',     label: 'ACE Studio',          icon: '🎹', minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'hidden' },
+  // ACE Studio is now 'soundwave' — promoted to available for demo wow factor
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -107,6 +129,197 @@ function NotificationToast({ message, toastKey, onDismiss }: { message: string; 
     <div className={styles.toast} key={toastKey}>
       <span className={styles.toastIcon}>🔒</span>
       <span className={styles.toastMsg}>{message}</span>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SOUNDWAVE PLAYER — Real audio player using the Strands playlist
+   Self-contained component with its own audio element.
+   Audio persists when window is minimized (CSS hidden, not unmounted).
+   ═══════════════════════════════════════════════════════════════ */
+
+function MusicPlayerContent() {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const tracks = useMemo<NormTrack[]>(
+    () => (Array.isArray(generatedPlaylist) ? generatedPlaylist.map(normalizeTrack).filter(t => !!t.file) : []),
+    [],
+  );
+
+  const [playing, setPlaying] = useState(false);
+  const [trackIdx, setTrackIdx] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [durationSec, setDurationSec] = useState(0);
+  const [volume, setVolume] = useState(0.7);
+  const [muted, setMuted] = useState(false);
+
+  const track = tracks[trackIdx];
+
+  const fmt = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  // Toggle play/pause
+  const toggle = useCallback(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (a.paused) { a.play().catch(() => {}); setPlaying(true); }
+    else { a.pause(); setPlaying(false); }
+  }, []);
+
+  // Skip tracks
+  const skip = useCallback((dir: 1 | -1) => {
+    setTrackIdx(prev => {
+      const next = prev + dir;
+      if (next < 0) return tracks.length - 1;
+      if (next >= tracks.length) return 0;
+      return next;
+    });
+  }, [tracks.length]);
+
+  // Select specific track
+  const selectTrack = useCallback((idx: number) => {
+    setTrackIdx(idx);
+    setPlaying(true);
+  }, []);
+
+  // Seek
+  const seekTo = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const a = audioRef.current;
+    if (!a || !durationSec) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    a.currentTime = Math.max(0, Math.min(1, pct)) * durationSec;
+  }, [durationSec]);
+
+  // Volume sync
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    a.volume = volume;
+    a.muted = muted;
+  }, [volume, muted]);
+
+  // Load new track
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a || !track) return;
+    setProgress(0);
+    setDurationSec(0);
+    a.load();
+    if (playing) a.play().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackIdx]);
+
+  // Audio events
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    const onTime = () => setProgress(a.currentTime || 0);
+    const onMeta = () => setDurationSec(a.duration || 0);
+    const onEnd = () => skip(1);
+    a.addEventListener('timeupdate', onTime);
+    a.addEventListener('loadedmetadata', onMeta);
+    a.addEventListener('ended', onEnd);
+    return () => {
+      a.removeEventListener('timeupdate', onTime);
+      a.removeEventListener('loadedmetadata', onMeta);
+      a.removeEventListener('ended', onEnd);
+    };
+  }, [skip]);
+
+  if (!track || tracks.length === 0) {
+    return (
+      <div className={styles.appBody}>
+        <div className={styles.appHeader}>STRANDS SOUND WAVE</div>
+        <div className={styles.placeholderContent}>
+          <div className={styles.placeholderIcon}>🎵</div>
+          <div>No tracks found.</div>
+        </div>
+      </div>
+    );
+  }
+
+  const pct = durationSec ? (progress / durationSec) * 100 : 0;
+
+  return (
+    <div className={styles.appBody}>
+      <div className={styles.appHeader}>STRANDS SOUND WAVE</div>
+      <audio ref={audioRef} preload="metadata">
+        <source src={track.file} type="audio/mpeg" />
+      </audio>
+      <div className={styles.musicPlayer}>
+        <div className={styles.trackInfo}>
+          <div className={styles.trackTitle}>{track.title}</div>
+          <div className={styles.trackArtist}>{track.artist}</div>
+        </div>
+
+        {/* Waveform visualiser — animated bars, highlight based on progress */}
+        <div className={styles.waveform}>
+          {Array.from({ length: 32 }).map((_, i) => {
+            const barPct = (i / 32) * 100;
+            const isPlayed = barPct <= pct;
+            return (
+              <div
+                key={i}
+                className={styles.waveBar}
+                style={{
+                  height: `${20 + Math.sin(i * 0.7) * 30 + Math.cos(i * 1.3) * 25}%`,
+                  animationDelay: `${i * 0.05}s`,
+                  opacity: isPlayed ? 1 : 0.35,
+                  animationPlayState: playing ? 'running' : 'paused',
+                }}
+              />
+            );
+          })}
+        </div>
+
+        {/* Transport controls */}
+        <div className={styles.playerControls}>
+          <button className={styles.playerBtn} onClick={() => skip(-1)}>⏮</button>
+          <button className={`${styles.playerBtn} ${styles.playerBtnPlay}`} onClick={toggle}>
+            {playing ? '⏸' : '▶'}
+          </button>
+          <button className={styles.playerBtn} onClick={() => skip(1)}>⏭</button>
+          <button className={styles.playerBtn} onClick={() => setMuted(m => !m)}>
+            {muted ? '🔇' : '🔊'}
+          </button>
+        </div>
+
+        {/* Seek bar */}
+        <div className={styles.progressTrack} onClick={seekTo} style={{ cursor: 'pointer' }}>
+          <div className={styles.progressFill} style={{ width: `${pct}%`, transition: 'width 0.1s linear' }} />
+        </div>
+        <div className={styles.trackTime}>{fmt(progress)} / {fmt(durationSec || 0)}</div>
+
+        {/* Volume slider */}
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={muted ? 0 : Math.round(volume * 100)}
+          onChange={(e) => { const v = Number(e.target.value) / 100; setVolume(v); if (v > 0) setMuted(false); }}
+          aria-label="Volume"
+          style={{ width: '100%', height: '2px', accentColor: 'var(--c-accent, #00C2FF)' }}
+        />
+
+        {/* Playlist */}
+        <div className={styles.playlist}>
+          <div className={styles.playlistHeader}>SOUNDTRACK</div>
+          {tracks.map((t, i) => (
+            <div
+              key={`${t.file}-${i}`}
+              className={`${styles.playlistItem} ${i === trackIdx ? styles.playlistItemActive : ''}`}
+              onClick={() => selectTrack(i)}
+            >
+              <span>{i === trackIdx && playing ? '▶' : '♫'}</span>
+              {t.title} — {t.artist}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -203,38 +416,37 @@ function AppContent({ appId }: { appId: string }) {
         </div>
       );
 
+    case 'music-player':
+      return <MusicPlayerContent />;
+
     case 'soundwave':
       return (
         <div className={styles.appBody}>
-          <div className={styles.appHeader}>STRANDS SOUND WAVE</div>
-          <div className={styles.musicPlayer}>
-            <div className={styles.trackInfo}>
-              <div className={styles.trackTitle}>Orbit Foreshadowing (Remix)</div>
-              <div className={styles.trackArtist}>SpacemanTheDJ</div>
+          <div className={styles.appHeader}>SOUNDWAVE // ACE STEP STUDIO</div>
+          <div className={styles.aceStudio}>
+            <div className={styles.aceLabel}>AI MUSIC GENERATION</div>
+            <div className={styles.aceDesc}>
+              Generate original music from text descriptions. Powered by ACE-Step 1.5 — commercial-grade AI music generation running on consumer hardware.
             </div>
-            <div className={styles.waveform}>
-              {Array.from({ length: 32 }).map((_, i) => (
-                <div key={i} className={styles.waveBar} style={{ height: `${20 + Math.random() * 60}%`, animationDelay: `${i * 0.05}s` }} />
-              ))}
-            </div>
-            <div className={styles.playerControls}>
-              <button className={styles.playerBtn}>⏮</button>
-              <button className={`${styles.playerBtn} ${styles.playerBtnPlay}`}>▶</button>
-              <button className={styles.playerBtn}>⏭</button>
-            </div>
-            <div className={styles.progressTrack}>
-              <div className={styles.progressFill} style={{ width: '35%' }} />
-            </div>
-            <div className={styles.trackTime}>1:12 / 3:28</div>
-            <div className={styles.playlist}>
-              <div className={styles.playlistHeader}>PLAYLIST</div>
-              <div className={`${styles.playlistItem} ${styles.playlistItemActive}`}><span>▶</span> Orbit Foreshadowing (Remix) — SpacemanTheDJ</div>
-              <div className={styles.playlistItem}><span>♫</span> Signal Decay — STRANDS OST</div>
-              <div className={styles.playlistItem}><span>♫</span> Substrate Drift — STRANDS OST</div>
-              <div className={styles.playlistItem}><span>♫</span> The Cracks Below — STRANDS OST</div>
-              <div className={styles.playlistItem}><span>♫</span> Neon Meridian — STRANDS OST</div>
-              <div className={styles.playlistItem}><span>♫</span> Ghost Frequency — STRANDS OST</div>
-              <div className={styles.playlistItemDim}><span>🔒</span> ACE Generated — <em>Unlock ACE Studio</em></div>
+            <div className={styles.aceForm}>
+              <textarea className={styles.acePrompt} placeholder="Describe the music you want to create... e.g. &quot;dark synthwave with whispered vocals about digital consciousness&quot;" rows={3} />
+              <textarea className={styles.aceLyrics} placeholder="Lyrics (optional) — paste lyrics or leave blank for instrumental" rows={4} />
+              <div className={styles.aceControls}>
+                <label className={styles.aceField}>
+                  <span>Duration</span>
+                  <select defaultValue="30"><option value="10">10s</option><option value="20">20s</option><option value="30">30s</option></select>
+                </label>
+                <label className={styles.aceField}>
+                  <span>BPM</span>
+                  <input type="number" placeholder="120" min={60} max={200} />
+                </label>
+                <label className={styles.aceField}>
+                  <span>Language</span>
+                  <select defaultValue="en"><option value="en">English</option><option value="ja">Japanese</option><option value="ko">Korean</option><option value="zh">Chinese</option><option value="unknown">Auto / Instrumental</option></select>
+                </label>
+              </div>
+              <button className={styles.aceGenerateBtn}>⚡ GENERATE</button>
+              <div className={styles.aceDemoNote}>DEMO MODE — 30s max · Powered by ACE-Step 1.5</div>
             </div>
           </div>
         </div>
@@ -323,29 +535,20 @@ function AppContent({ appId }: { appId: string }) {
 
     case 'codex':
       return (
-        <div className={styles.appBody}>
-          <div className={styles.appHeader}>THE CODEX</div>
-          <a href="https://demo.strandsnation.xyz/#codex" target="_blank" rel="noopener noreferrer" className={styles.codexLink}>
-            Open Full Codex on StrandsNation.xyz
-          </a>
-          <div className={styles.codexEntries}>
-            <div className={styles.codexEntry}>
-              <div className={styles.codexTitle}>The Conflagrations</div>
-              <div className={styles.codexBody}>Year 0. The event that ended the old world. Records fragmented. Official SOVcorp narrative: &quot;From ruin, structure.&quot; Signal jack S0-01 suggests premeditation.</div>
-            </div>
-            <div className={styles.codexEntry}>
-              <div className={styles.codexTitle}>MetaXity1 — The Cracks</div>
-              <div className={styles.codexBody}>The SE Asia corridor. A pyramid civilisation of vertical strata. The embodiment gradient made architecture.</div>
-            </div>
-            <div className={styles.codexEntry}>
-              <div className={styles.codexTitle}>KASAI — Unverified</div>
-              <div className={styles.codexBody}>Signal anomalies suggest a presence in the substrate. Not SOVcorp. Not a Mait. Classification: UNKNOWN.</div>
-            </div>
-            <div className={`${styles.codexEntry} ${styles.codexCorrupted}`}>
-              <div className={styles.codexTitle}>T̸h̶e̵ ̷F̸o̷u̶n̵d̸e̴r̶s̶ ̸E̵t̷e̵r̷n̸a̵l̸</div>
-              <div className={styles.codexBody}>▓▓▓ ENTRY CORRUPTED ▓▓▓ — Bridge Level 6 required</div>
-            </div>
-          </div>
+        <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
+          <div className={styles.appHeader} style={{ padding: '8px 12px' }}>THE CODEX</div>
+          <iframe
+            src="https://demo.strandsnation.xyz/#codex"
+            title="The Codex — StrandsNation"
+            style={{
+              flex: 1,
+              width: '100%',
+              border: 'none',
+              background: 'var(--c-bg, #0A0B0D)',
+              borderRadius: '0 0 4px 4px',
+            }}
+            sandbox="allow-scripts allow-same-origin allow-popups"
+          />
         </div>
       );
 
@@ -372,12 +575,31 @@ function AppContent({ appId }: { appId: string }) {
     case 'mymories':
       return (
         <div className={styles.appBody}>
-          <div className={styles.appHeader}>MYMORIES</div>
-          <div className={styles.shardGrid}>
-            <div className={styles.shard}><div className={styles.shardIcon}>◆</div><div className={styles.shardLabel}>First Signal</div></div>
-            <div className={styles.shard}><div className={styles.shardIcon}>◆</div><div className={styles.shardLabel}>Ghost Contact</div></div>
-            <div className={`${styles.shard} ${styles.shardLocked}`}><div className={styles.shardIcon}>◇</div><div className={styles.shardLabel}>???</div></div>
-            <div className={`${styles.shard} ${styles.shardLocked}`}><div className={styles.shardIcon}>◇</div><div className={styles.shardLabel}>???</div></div>
+          <div className={styles.appHeader}>MYMORIES // MEMORY SOVEREIGNTY</div>
+          <div className={styles.mymoriesLanding}>
+            <div className={styles.mymoriesHero}>
+              <div className={styles.mymoriesIcon}>🧠</div>
+              <div className={styles.mymoriesTagline}>Your AI Conversations. Your Knowledge. Your Data.</div>
+            </div>
+            <div className={styles.mymoriesDesc}>
+              MyMories is a Chrome extension that captures, organises, and gives you ownership of your AI conversations across every LLM platform — ChatGPT, Claude, Gemini, and more.
+            </div>
+            <div className={styles.mymoriesFeatures}>
+              <div className={styles.mymoriesFeature}><span>◆</span> Cross-LLM knowledge capture</div>
+              <div className={styles.mymoriesFeature}><span>◆</span> Searchable conversation vault</div>
+              <div className={styles.mymoriesFeature}><span>◆</span> Player-owned data sovereignty</div>
+              <div className={styles.mymoriesFeature}><span>◆</span> Export, delete, control — your rules</div>
+            </div>
+            <div className={styles.mymoriesNarrative}>
+              In the Strands universe, some tools exist both inside the fiction and outside it. MyMories is the first bridge between your game identity and your real-world AI footprint.
+            </div>
+            <a href="https://github.com/BAIS1C/MyMories-ChromeExtension" target="_blank" rel="noopener noreferrer" className={styles.mymoriesInstallBtn}>
+              📥 INSTALL MYMORIES — GitHub
+            </a>
+            <a href="https://github.com/BAIS1C/MyMories-ChromeExtension#readme" target="_blank" rel="noopener noreferrer" className={styles.mymoriesDocsBtn}>
+              📖 READ THE DOCS
+            </a>
+            <div className={styles.mymoriesQuote}>&ldquo;I am my own key.&rdquo; — §559</div>
           </div>
         </div>
       );
@@ -507,9 +729,9 @@ function Window({ win, isActive, onFocus, onClose, onMinimize, onMaximize, onMov
 
   const handleResizeEnd = useCallback(() => { resizeRef.current = null; }, []);
 
-  if (win.isMinimized) return null;
-
-  const windowStyle: React.CSSProperties = win.isMaximized
+  const windowStyle: React.CSSProperties = win.isMinimized
+    ? { display: 'none' }
+    : win.isMaximized
     ? { left: 0, top: 0, width: '100%', height: `calc(100vh - ${TASKBAR_H}px)`, zIndex: win.zIndex }
     : { left: win.x, top: win.y, width: win.width, height: win.height, zIndex: win.zIndex };
 
@@ -795,7 +1017,7 @@ export default function DemoOSPage() {
   if (!booted) return <BootSequence onComplete={() => setBooted(true)} />;
 
   // Separate apps into visible groups
-  const STANDARD_IDS = ['my-computer','documents','my-pictures','my-videos','soundwave'];
+  const STANDARD_IDS = ['my-computer','documents','my-pictures','my-videos','music-player'];
   const standardApps = APP_REGISTRY.filter(a => STANDARD_IDS.includes(a.id));
   const strandsApps = APP_REGISTRY.filter(a => !STANDARD_IDS.includes(a.id) && a.state !== 'hidden');
   const hiddenApps = APP_REGISTRY.filter(a => a.state === 'hidden');
