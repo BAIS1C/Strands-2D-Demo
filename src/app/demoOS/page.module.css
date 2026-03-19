@@ -1,0 +1,1212 @@
+/* ═══════════════════════════════════════════════════════════════
+   DEMO OS — Desktop Operating System Shell
+   Strands Design System · Orbitron + Rajdhani · Cyan/Pink/Dark
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── BOOT SEQUENCE ─── */
+
+.bootScreen {
+  position: fixed;
+  inset: 0;
+  background: #030304;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  font-family: 'Courier New', monospace;
+}
+
+.bootTerminal {
+  max-width: 600px;
+  width: 90%;
+  padding: 32px;
+}
+
+.bootLine {
+  color: var(--c-accent, #00C2FF);
+  font-size: 13px;
+  line-height: 1.8;
+  animation: fadeIn 0.3s ease both;
+  opacity: 0.85;
+}
+
+.bootPrompt {
+  color: var(--c-pink, #F000B8);
+  margin-right: 8px;
+}
+
+.bootCursor {
+  color: var(--c-accent, #00C2FF);
+  font-size: 16px;
+  animation: blink 0.6s step-end infinite;
+  margin-top: 4px;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ─── DESKTOP OS SHELL ─── */
+
+.desktopOS {
+  position: fixed;
+  inset: 0;
+  background: #030304;
+  overflow: hidden;
+  font-family: var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-text, #E2E8F0);
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+/* ─── DESKTOP SURFACE ─── */
+
+.desktopSurface {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.circuitPattern {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 194, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 194, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(rgba(0, 194, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 194, 255, 0.015) 1px, transparent 1px);
+  background-size: 80px 80px, 80px 80px, 20px 20px, 20px 20px;
+  animation: circuitDrift 60s linear infinite;
+}
+
+@keyframes circuitDrift {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(80px, 80px); }
+}
+
+.radialCyan {
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  left: 10%;
+  top: 70%;
+  background: radial-gradient(ellipse, rgba(0, 194, 255, 0.06) 0%, transparent 70%);
+}
+
+.radialPink {
+  position: absolute;
+  width: 50%;
+  height: 50%;
+  right: 5%;
+  top: 10%;
+  background: radial-gradient(ellipse, rgba(240, 0, 184, 0.04) 0%, transparent 70%);
+}
+
+.gridLines {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 194, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 194, 255, 0.02) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+.scanlineOverlay {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 194, 255, 0.012) 2px,
+    rgba(0, 194, 255, 0.012) 4px
+  );
+  animation: scanFlicker 4s infinite;
+}
+
+@keyframes scanFlicker {
+  0% { opacity: 1; }
+  5% { opacity: 0.4; }
+  6% { opacity: 1; }
+  15% { opacity: 0.7; }
+  16% { opacity: 1; }
+  50% { opacity: 0.85; }
+  70% { opacity: 0.35; }
+  71% { opacity: 0.9; }
+  100% { opacity: 1; }
+}
+
+/* ─── ICON GRID ─── */
+
+.iconGrid {
+  position: relative;
+  z-index: 1;
+  padding: 24px 24px 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.iconRow {
+  display: grid;
+  grid-template-columns: repeat(5, 88px);
+  gap: 8px;
+}
+
+.desktopIcon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  width: 88px;
+  height: 88px;
+  justify-content: center;
+}
+
+.desktopIcon:hover {
+  background: rgba(0, 194, 255, 0.06);
+  border-color: rgba(0, 194, 255, 0.12);
+  box-shadow: 0 0 20px rgba(0, 194, 255, 0.05);
+}
+
+.desktopIcon:active {
+  transform: scale(0.94);
+}
+
+.iconGlyph {
+  font-size: 32px;
+  line-height: 1;
+  position: relative;
+  filter: drop-shadow(0 0 6px rgba(0, 194, 255, 0.2));
+}
+
+.lockOverlay {
+  position: absolute;
+  bottom: -4px;
+  right: -8px;
+  font-size: 12px;
+}
+
+.iconLabel {
+  font: 600 9px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 0.5px;
+  color: var(--c-sub, #A0AEC0);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 76px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notificationDot {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-pink, #F000B8);
+  box-shadow: 0 0 8px rgba(240, 0, 184, 0.6);
+  animation: pinkPulse 2s ease-in-out infinite;
+}
+
+@keyframes pinkPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.4); }
+}
+
+.tooltip {
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 15, 25, 0.95);
+  border: 1px solid rgba(0, 194, 255, 0.2);
+  padding: 4px 10px;
+  font: 400 9px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-accent, #00C2FF);
+  white-space: nowrap;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 9000;
+}
+
+/* Locked icons */
+.desktopIconLocked {
+  opacity: 0.3;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+.desktopIconLocked:hover {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.04);
+  box-shadow: none;
+}
+
+/* Ghosted icons */
+.desktopIconGhosted {
+  opacity: 0.15;
+  cursor: default;
+  filter: grayscale(1) blur(0.5px);
+}
+
+/* Hidden slots */
+.iconSlotHidden {
+  width: 88px;
+  height: 88px;
+  border: 1px dashed rgba(0, 194, 255, 0.06);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.hiddenGlitch {
+  position: relative;
+}
+
+.glitchChar {
+  font: 700 18px var(--font-display, 'Orbitron', monospace);
+  color: rgba(0, 194, 255, 0.08);
+  animation: glitchFlicker 8s step-end infinite;
+}
+
+@keyframes glitchFlicker {
+  0%, 90% { opacity: 0; }
+  91% { opacity: 1; color: rgba(240, 0, 184, 0.4); }
+  93% { opacity: 0; }
+  95% { opacity: 1; color: rgba(0, 194, 255, 0.3); transform: translate(2px, -1px); }
+  97% { opacity: 0; transform: translate(0); }
+}
+
+.iconSlotEmpty {
+  width: 88px;
+  height: 88px;
+}
+
+/* ─── WINDOW ─── */
+
+.window {
+  position: absolute;
+  background: rgba(10, 11, 13, 0.92);
+  border: 1px solid rgba(0, 194, 255, 0.1);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow:
+    0 4px 32px rgba(0, 0, 0, 0.5),
+    0 0 1px rgba(0, 194, 255, 0.1);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.windowActive {
+  border-color: rgba(0, 194, 255, 0.25);
+  box-shadow:
+    0 8px 48px rgba(0, 0, 0, 0.6),
+    0 0 24px rgba(0, 194, 255, 0.08),
+    inset 0 0 0 1px rgba(0, 194, 255, 0.05);
+}
+
+/* ─── TITLE BAR ─── */
+
+.titleBar {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 10px;
+  background: rgba(15, 15, 25, 0.6);
+  border-bottom: 1px solid rgba(0, 194, 255, 0.06);
+  cursor: grab;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.titleBar:active {
+  cursor: grabbing;
+}
+
+.titleIcon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.titleText {
+  font: 600 10px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 1px;
+  color: var(--c-sub, #A0AEC0);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.windowControls {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.winBtn {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.4);
+  border: none;
+  padding: 0;
+}
+
+.winBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.winBtnMin { font-size: 8px; }
+.winBtnMax { font-size: 9px; }
+
+.winBtnClose:hover {
+  background: rgba(255, 51, 85, 0.4);
+  color: #fff;
+}
+
+/* ─── WINDOW CONTENT ─── */
+
+.windowContent {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+/* ─── RESIZE HANDLES ─── */
+
+.resizeHandle {
+  position: absolute;
+  z-index: 10;
+}
+
+.resize_n {
+  top: -3px; left: 12px; right: 12px; height: 6px;
+  cursor: n-resize;
+}
+.resize_s {
+  bottom: -3px; left: 12px; right: 12px; height: 6px;
+  cursor: s-resize;
+}
+.resize_e {
+  top: 12px; right: -3px; bottom: 12px; width: 6px;
+  cursor: e-resize;
+}
+.resize_w {
+  top: 12px; left: -3px; bottom: 12px; width: 6px;
+  cursor: w-resize;
+}
+.resize_ne {
+  top: -3px; right: -3px; width: 14px; height: 14px;
+  cursor: ne-resize;
+}
+.resize_nw {
+  top: -3px; left: -3px; width: 14px; height: 14px;
+  cursor: nw-resize;
+}
+.resize_se {
+  bottom: -3px; right: -3px; width: 14px; height: 14px;
+  cursor: se-resize;
+}
+.resize_sw {
+  bottom: -3px; left: -3px; width: 14px; height: 14px;
+  cursor: sw-resize;
+}
+
+/* ─── TASKBAR ─── */
+
+.taskbar {
+  position: relative;
+  z-index: 9000;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: rgba(10, 11, 13, 0.9);
+  border-top: 1px solid rgba(0, 194, 255, 0.08);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  flex-shrink: 0;
+}
+
+.startBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: linear-gradient(135deg, rgba(0, 194, 255, 0.12), rgba(240, 0, 184, 0.12));
+  border: 1px solid rgba(0, 194, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.startBtn:hover {
+  background: linear-gradient(135deg, rgba(0, 194, 255, 0.2), rgba(240, 0, 184, 0.2));
+  border-color: rgba(0, 194, 255, 0.3);
+  box-shadow: 0 0 16px rgba(0, 194, 255, 0.15);
+}
+
+.startLogo {
+  font-size: 20px;
+  color: var(--c-accent, #00C2FF);
+  filter: drop-shadow(0 0 4px rgba(0, 194, 255, 0.3));
+}
+
+.taskbarWindows {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.taskbarWindows::-webkit-scrollbar { display: none; }
+
+.taskbarApp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+  flex-shrink: 0;
+  max-width: 160px;
+}
+
+.taskbarApp:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.taskbarAppActive {
+  background: rgba(0, 194, 255, 0.08);
+  border-color: rgba(0, 194, 255, 0.15);
+}
+
+.taskbarAppMinimized {
+  opacity: 0.5;
+}
+
+.taskbarAppIcon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.taskbarAppLabel {
+  font: 500 9px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 0.5px;
+  color: var(--c-sub, #A0AEC0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* System Tray */
+
+.systemTray {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.syncMeter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.syncMeterLabel {
+  font: 600 8px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-dim, #6b7280);
+  letter-spacing: 1px;
+}
+
+.syncMeterBar {
+  width: 60px;
+  height: 6px;
+  background: rgba(0, 194, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.syncMeterFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c-accent, #00C2FF), rgba(0, 194, 255, 0.6));
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: syncPulse 3s ease-in-out infinite;
+}
+
+@keyframes syncPulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+.syncMeterValue {
+  font: 600 9px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-accent, #00C2FF);
+  min-width: 28px;
+}
+
+.bridgeBadge {
+  font: 700 9px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-accent, #00C2FF);
+  background: rgba(0, 194, 255, 0.06);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 194, 255, 0.12);
+  letter-spacing: 1px;
+}
+
+.anomalyIndicator {
+  cursor: pointer;
+}
+
+.anomalyPulse {
+  color: var(--c-pink, #F000B8);
+  font-size: 12px;
+  animation: anomalyBeat 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(240, 0, 184, 0.4));
+}
+
+@keyframes anomalyBeat {
+  0%, 85%, 100% { opacity: 0.2; }
+  88% { opacity: 1; }
+  91% { opacity: 0.3; }
+  93% { opacity: 0.9; }
+}
+
+.taskbarClock {
+  font: 600 10px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-dim, #6b7280);
+  letter-spacing: 1px;
+  min-width: 70px;
+  text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   APP CONTENT STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── LOCKED APP ─── */
+
+.lockedContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  padding: 32px;
+  text-align: center;
+}
+
+.lockIcon {
+  font-size: 48px;
+  opacity: 0.3;
+}
+
+.lockMsg {
+  font: 600 11px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-accent, #00C2FF);
+  letter-spacing: 1px;
+}
+
+.lockSub {
+  font: 400 12px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-dim, #6b7280);
+}
+
+/* ─── GENERIC APP BODY ─── */
+
+.appBody {
+  padding: 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.appHeader {
+  font: 700 11px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 2px;
+  color: var(--c-accent, #00C2FF);
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 194, 255, 0.08);
+}
+
+.demoTag {
+  font: 400 9px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-pink, #F000B8);
+  letter-spacing: 1px;
+  background: rgba(240, 0, 184, 0.06);
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(240, 0, 184, 0.12);
+  align-self: flex-start;
+}
+
+/* ─── SIGNAL REG ─── */
+
+.profileCard {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  background: rgba(0, 194, 255, 0.03);
+  border: 1px solid rgba(0, 194, 255, 0.06);
+  border-radius: 8px;
+}
+
+.profileAvatar {
+  font-size: 40px;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 194, 255, 0.06);
+  border-radius: 50%;
+  border: 1px solid rgba(0, 194, 255, 0.12);
+}
+
+.profileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profileName {
+  font: 700 13px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-text, #E2E8F0);
+  letter-spacing: 1px;
+}
+
+.profileSub {
+  font: 400 11px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-dim, #6b7280);
+}
+
+.statusBar {
+  height: 8px;
+  background: rgba(0, 194, 255, 0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.statusFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c-accent, #00C2FF), rgba(0, 194, 255, 0.5));
+  border-radius: 4px;
+  transition: width 1s ease;
+}
+
+.statusFillAnimated {
+  animation: reconstructPulse 4s ease-in-out infinite;
+}
+
+@keyframes reconstructPulse {
+  0% { width: 0%; opacity: 0.6; }
+  60% { width: 78%; opacity: 1; }
+  80% { width: 82%; opacity: 0.8; }
+  100% { width: 0%; opacity: 0.4; }
+}
+
+.statusLabel {
+  font: 600 9px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-dim, #6b7280);
+  letter-spacing: 1px;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* ─── MESSAGES ─── */
+
+.chatWindow {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.chatMsg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.chatMsgSystem {
+  background: rgba(240, 0, 184, 0.04);
+  border-color: rgba(240, 0, 184, 0.08);
+}
+
+.chatSender {
+  font: 600 10px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-accent, #00C2FF);
+  letter-spacing: 0.5px;
+}
+
+.chatText {
+  font: 400 13px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-text, #E2E8F0);
+  line-height: 1.5;
+}
+
+/* ─── SOUNDWAVE ─── */
+
+.musicPlayer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.trackInfo {
+  text-align: center;
+}
+
+.trackTitle {
+  font: 600 12px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-text, #E2E8F0);
+  letter-spacing: 0.5px;
+}
+
+.trackArtist {
+  font: 400 11px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-dim, #6b7280);
+}
+
+.waveform {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 60px;
+  padding: 0 4px;
+}
+
+.waveBar {
+  flex: 1;
+  background: linear-gradient(to top, var(--c-accent, #00C2FF), rgba(0, 194, 255, 0.3));
+  border-radius: 2px 2px 0 0;
+  animation: waveBounce 1.5s ease-in-out infinite alternate;
+  opacity: 0.6;
+}
+
+@keyframes waveBounce {
+  0% { transform: scaleY(0.6); }
+  100% { transform: scaleY(1); }
+}
+
+.playerControls {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.playerBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--c-sub, #A0AEC0);
+  font-size: 14px;
+}
+
+.playerBtn:hover {
+  background: rgba(0, 194, 255, 0.1);
+  border-color: rgba(0, 194, 255, 0.2);
+  color: var(--c-accent, #00C2FF);
+}
+
+.playerBtnPlay {
+  width: 44px;
+  height: 44px;
+  background: rgba(0, 194, 255, 0.1);
+  border-color: rgba(0, 194, 255, 0.2);
+}
+
+.progressTrack {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--c-accent, #00C2FF);
+  border-radius: 2px;
+}
+
+.trackTime {
+  font: 400 9px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-dim, #6b7280);
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+/* ─── SIGNAL MONITOR ─── */
+
+.monitorScreen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.monitorGlitch {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.monitorText {
+  font: 600 10px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-accent, #00C2FF);
+  letter-spacing: 2px;
+  animation: textGlitch 3s step-end infinite;
+}
+
+@keyframes textGlitch {
+  0%, 90% { opacity: 1; transform: none; }
+  92% { opacity: 0.5; transform: translateX(4px); }
+  93% { opacity: 1; transform: translateX(-2px); }
+  94% { opacity: 0.8; transform: none; }
+  95% { opacity: 1; }
+}
+
+.monitorPreview {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 194, 255, 0.06);
+  border-radius: 4px;
+  padding: 16px;
+  margin-top: 8px;
+}
+
+.corruptedFrame {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font: 400 12px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-sub, #A0AEC0);
+}
+
+.corrupt {
+  color: var(--c-pink, #F000B8);
+  font: 500 11px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 1px;
+  animation: corruptFlash 5s step-end infinite;
+}
+
+@keyframes corruptFlash {
+  0%, 80% { opacity: 0.6; }
+  82% { opacity: 1; color: var(--c-accent, #00C2FF); }
+  84% { opacity: 0.3; }
+  86% { opacity: 0.9; color: var(--c-pink, #F000B8); }
+  88% { opacity: 0.6; }
+}
+
+/* ─── BRIDGE APP ─── */
+
+.bridgeVis {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.bridgeRow {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.bridgeNode {
+  width: 52px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 10px var(--font-display, 'Orbitron', monospace);
+  border-radius: 4px;
+  border: 1px solid;
+  letter-spacing: 1px;
+}
+
+.bridgeLit {
+  background: rgba(0, 194, 255, 0.15);
+  border-color: rgba(0, 194, 255, 0.4);
+  color: var(--c-accent, #00C2FF);
+  box-shadow: 0 0 12px rgba(0, 194, 255, 0.2);
+}
+
+.bridgePulse {
+  background: rgba(0, 194, 255, 0.08);
+  border-color: rgba(0, 194, 255, 0.25);
+  color: var(--c-accent, #00C2FF);
+  animation: bridgePulseAnim 2s ease-in-out infinite;
+}
+
+@keyframes bridgePulseAnim {
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 194, 255, 0.1); }
+  50% { box-shadow: 0 0 20px rgba(0, 194, 255, 0.3); }
+}
+
+.bridgeDim {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.06);
+  color: var(--c-dim, #6b7280);
+}
+
+.syncBreakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+}
+
+.syncCategory {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 400 10px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-sub, #A0AEC0);
+}
+
+.syncCategory > span:first-child {
+  width: 80px;
+  text-align: right;
+  font-size: 11px;
+}
+
+.syncCategory > span:last-child {
+  width: 55px;
+  text-align: right;
+  font: 400 9px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-dim, #6b7280);
+}
+
+.syncBar {
+  flex: 1;
+  height: 6px;
+  background: rgba(0, 194, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.syncFill {
+  height: 100%;
+  background: var(--c-accent, #00C2FF);
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.syncTotal {
+  font: 700 11px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-accent, #00C2FF);
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.calendarGate {
+  font: 400 10px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-dim, #6b7280);
+  text-align: center;
+  font-style: italic;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding-top: 8px;
+}
+
+/* ─── CODEX ─── */
+
+.codexEntries {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.codexEntry {
+  padding: 12px;
+  background: rgba(0, 194, 255, 0.02);
+  border: 1px solid rgba(0, 194, 255, 0.06);
+  border-radius: 6px;
+}
+
+.codexCorrupted {
+  background: rgba(240, 0, 184, 0.03);
+  border-color: rgba(240, 0, 184, 0.1);
+}
+
+.codexTitle {
+  font: 600 10px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-accent, #00C2FF);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.codexCorrupted .codexTitle {
+  color: var(--c-pink, #F000B8);
+}
+
+.codexBody {
+  font: 400 12px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-sub, #A0AEC0);
+  line-height: 1.5;
+}
+
+/* ─── MYMORIES ─── */
+
+.shardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  flex: 1;
+}
+
+.shard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  background: rgba(0, 194, 255, 0.03);
+  border: 1px solid rgba(0, 194, 255, 0.08);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.shard:hover {
+  background: rgba(0, 194, 255, 0.06);
+  border-color: rgba(0, 194, 255, 0.15);
+}
+
+.shardLocked {
+  opacity: 0.3;
+  filter: grayscale(0.8);
+}
+
+.shardIcon {
+  font-size: 24px;
+  color: var(--c-accent, #00C2FF);
+}
+
+.shardLabel {
+  font: 500 10px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-sub, #A0AEC0);
+  letter-spacing: 0.5px;
+}
+
+/* ─── PLACEHOLDER ─── */
+
+.placeholderContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  opacity: 0.3;
+  font: 400 12px var(--font-body, 'Rajdhani', sans-serif);
+  color: var(--c-dim, #6b7280);
+}
+
+.placeholderIcon {
+  font-size: 48px;
+  color: var(--c-accent, #00C2FF);
+  opacity: 0.2;
+}
+
+/* ─── ANIMATIONS ─── */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── RESPONSIVE ─── */
+
+@media (max-width: 768px) {
+  .iconRow {
+    grid-template-columns: repeat(4, 80px);
+  }
+  .desktopIcon {
+    width: 80px;
+    height: 80px;
+  }
+  .iconSlotHidden {
+    width: 80px;
+    height: 80px;
+  }
+  .iconSlotEmpty {
+    width: 80px;
+    height: 80px;
+  }
+  .iconGlyph {
+    font-size: 26px;
+  }
+  .syncMeter {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .iconRow {
+    grid-template-columns: repeat(3, 72px);
+  }
+  .desktopIcon {
+    width: 72px;
+    height: 72px;
+  }
+  .bridgeBadge {
+    display: none;
+  }
+}

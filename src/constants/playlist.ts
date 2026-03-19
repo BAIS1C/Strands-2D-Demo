@@ -39,6 +39,11 @@ export const playlist = [
     "artist": "SpacemanTheDJ"
   },
   {
+    "src": "/audio/soundtrack/Strands Investigation Bed.mp3",
+    "title": "Strands Investigation Bed",
+    "artist": "SpacemanTheDJ"
+  },
+  {
     "src": "/audio/soundtrack/Strands The Game (Scatty mcMuffin Mix) - Spaceman The DJ.mp3",
     "title": "XYZ (Scatty XYZ miix)",
     "artist": "SpacemanTheDJ"
