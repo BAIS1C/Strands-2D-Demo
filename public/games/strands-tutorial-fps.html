@@ -851,11 +851,14 @@
             }
         });
         document.addEventListener('mousemove', e => {
-            if (!state.isPlaying || isPaused || document.pointerLockElement !== renderer.domElement) return;
-            yaw -= e.movementX*0.002; pitch -= e.movementY*0.002;
+            if (!state.isPlaying || isPaused) return;
+            // Use movementX/Y if pointer lock is active, otherwise still track (works for aim within iframe)
+            const mx = e.movementX || 0, my = e.movementY || 0;
+            if (mx === 0 && my === 0) return;
+            yaw -= mx*0.002; pitch -= my*0.002;
             pitch = Math.max(-Math.PI/2+0.1, Math.min(Math.PI/2-0.1, pitch));
             camera.rotation.order='YXZ'; camera.rotation.y=yaw; camera.rotation.x=pitch;
-            lookDelta += Math.abs(e.movementX)+Math.abs(e.movementY);
+            lookDelta += Math.abs(mx)+Math.abs(my);
         });
         document.addEventListener('mousedown', e => { if(e.button===0&&state.isPlaying&&!isPaused) shoot(); });
 
@@ -870,12 +873,6 @@
         renderer.domElement.addEventListener('click', () => {
             if (state.isPlaying && !isPaused && document.pointerLockElement !== renderer.domElement) {
                 try { renderer.domElement.requestPointerLock(); } catch(e) {}
-            }
-        });
-        /* Auto-pause when pointer lock is lost (e.g. user presses Escape in browser) */
-        document.addEventListener('pointerlockchange', () => {
-            if (state.isPlaying && !isPaused && document.pointerLockElement !== renderer.domElement) {
-                pauseGame();
             }
         });
         window.addEventListener('resize', () => { camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
