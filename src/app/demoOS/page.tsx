@@ -477,10 +477,19 @@ function AppContent({ appId }: { appId: string }) {
         <div className={styles.appBody}>
           <div className={styles.appHeader}>MY VIDEOS</div>
           <div className={styles.fileList}>
-            <div className={styles.fileItem}><span>🎬</span> Proper Gander S0-01.sig</div>
-            <div className={styles.fileItem}><span>🎬</span> Proper Gander S0-02.sig</div>
-            <div className={styles.fileItemDim}><span>🎬</span> S0-03.sig — <em>Signal reconstruction: 47%</em></div>
-            <div className={styles.fileItemDim}><span>🔒</span> S0-04 through S0-08 — <em>Locked</em></div>
+            <div className={styles.fileItemDim}><span>🔒</span> Proper Gander S0 — <em>Locked · Signal reconstruction in progress</em></div>
+          </div>
+          <div style={{ marginTop: '16px', borderTop: '1px solid rgba(0,194,255,0.1)', paddingTop: '12px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#A0AEC0', marginBottom: '10px' }}>SIGNAL FEEDS</div>
+            <a href="https://youtube.com/@strandsnation" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', color: '#00C2FF', textDecoration: 'none', fontSize: '13px', letterSpacing: '1px', borderBottom: '1px solid rgba(0,194,255,0.06)' }}>
+              <span style={{ fontSize: '16px' }}>▶</span> @strandsnation
+            </a>
+            <a href="https://www.youtube.com/@B4SICAI" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', color: '#00C2FF', textDecoration: 'none', fontSize: '13px', letterSpacing: '1px', borderBottom: '1px solid rgba(0,194,255,0.06)' }}>
+              <span style={{ fontSize: '16px' }}>▶</span> @B4SICAI
+            </a>
+            <a href="https://www.youtube.com/@spacemanthedj" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', color: '#00C2FF', textDecoration: 'none', fontSize: '13px', letterSpacing: '1px' }}>
+              <span style={{ fontSize: '16px' }}>▶</span> @spacemanthedj
+            </a>
           </div>
         </div>
       );
@@ -559,6 +568,17 @@ function AppContent({ appId }: { appId: string }) {
       return (
         <div className={styles.appBody}>
           <div className={styles.appHeader}>CPU-VPU BRIDGE</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(0,194,255,0.1)', marginBottom: '8px' }}>
+            <div style={{ fontSize: '11px', letterSpacing: '2px', color: '#A0AEC0' }}>BRIDGE LEVEL</div>
+            <div style={{ fontSize: '16px', letterSpacing: '3px', color: '#00C2FF', fontWeight: 'bold' }}>BL-{evo.bridgeLevel}</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', marginBottom: '6px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#A0AEC0', minWidth: '40px' }}>SYNC</div>
+            <div style={{ flex: 1, height: '6px', background: 'rgba(0,194,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ width: `${(evo.syncValue / 1200) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #00C2FF, #F000B8)', borderRadius: '3px', transition: 'width 0.3s' }} />
+            </div>
+            <div style={{ fontSize: '12px', letterSpacing: '1px', color: '#00C2FF', minWidth: '70px', textAlign: 'right' }}>{evo.syncValue} / 1,200</div>
+          </div>
           <div className={styles.bridgeVis}>
             <div className={styles.bridgeRow}>
               {[1,2,3,4,5].map(l => (
@@ -584,7 +604,7 @@ function AppContent({ appId }: { appId: string }) {
             <div className={styles.syncCategory}><span>Social</span><div className={styles.syncBar}><div className={styles.syncFill} style={{width:'22%'}}/></div><span>45/200</span></div>
           </div>
           <div className={styles.syncTotal}>TOTAL SYNC: {evo.syncValue} / 1,200</div>
-          <div className={styles.calendarGate}>Day 7 / 14 minimum — Temporal calibration cannot be rushed.</div>
+          <div className={styles.calendarGate}>Play games and complete activities to increase your Sync. Bridge levels unlock at milestones.</div>
         </div>
       );
 
@@ -690,15 +710,15 @@ function AppContent({ appId }: { appId: string }) {
               <div className={styles.consentLabel}>Identity Data</div>
               <div className={styles.consentRow}><span>Biometric Hash</span><span className={styles.consentGranted}>GRANTED</span></div>
               <div className={styles.consentRow}><span>Signal Fingerprint</span><span className={styles.consentGranted}>GRANTED</span></div>
-              <div className={styles.consentRow}><span>Location Telemetry</span><span className={styles.consentDenied}>DENIED</span></div>
+              <div className={styles.consentRow}><span>Location Telemetry</span><span className={styles.consentGranted}>GRANTED</span></div>
             </div>
             <div className={styles.consentSection}>
               <div className={styles.consentLabel}>Behavioural Data</div>
               <div className={styles.consentRow}><span>Interaction Patterns</span><span className={styles.consentGranted}>GRANTED</span></div>
-              <div className={styles.consentRow}><span>Cognitive Profiling</span><span className={styles.consentDenied}>DENIED</span></div>
-              <div className={styles.consentRow}><span>Emotional Mapping</span><span className={styles.consentPending}>PENDING</span></div>
+              <div className={styles.consentRow}><span>Game Sync</span><span className={styles.consentGranted}>GRANTED</span></div>
+              <div className={styles.consentRow}><span>Emotional Mapping</span><span className={styles.consentGranted}>GRANTED</span></div>
             </div>
-            <div className={styles.consentFooter}>Your data. Your rules. SOVcorp compliance: ENFORCED.</div>
+            <div className={styles.consentFooter}>Your data. Your rules. Consent protocol enforced.</div>
           </div>
         </div>
       );
@@ -943,14 +963,6 @@ function Taskbar({
       </div>
 
       <div className={styles.systemTray}>
-        <div className={styles.syncMeter}>
-          <div className={styles.syncMeterLabel}>SYNC</div>
-          <div className={styles.syncMeterBar}>
-            <div className={styles.syncMeterFill} style={{ width: `${(evo.syncValue / 1200) * 100}%` }} />
-          </div>
-          <div className={styles.syncMeterValue}>{evo.syncValue}</div>
-        </div>
-        <div className={styles.bridgeBadge}>BL-{evo.bridgeLevel}</div>
         <div className={styles.anomalyIndicator}><span className={styles.anomalyPulse}>◉</span></div>
         <div className={styles.taskbarDateTime}>
           <div className={styles.taskbarTime}>{dateTime.time}</div>
@@ -1065,6 +1077,17 @@ export default function DemoOSPage() {
     setWindows(prev => prev.filter(w => w.id !== id));
     if (activeWindowId === id) setActiveWindowId(null);
   }, [activeWindowId]);
+
+  /* ── Listen for game-quit postMessages from iframed games ── */
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'game-quit' && typeof e.data.id === 'string') {
+        closeWindow(e.data.id);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [closeWindow]);
 
   const minimizeWindow = useCallback((id: string) => {
     setWindows(prev => prev.map(w => w.id === id ? { ...w, isMinimized: true } : w));

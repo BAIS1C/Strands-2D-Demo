@@ -112,9 +112,23 @@
     transition:all 0.2s;
   }
   .breach-btn:hover{background:rgba(0,194,255,0.1);box-shadow:0 0 16px rgba(0,194,255,0.2);}
+  #pause-menu{position:fixed;inset:0;background:rgba(3,3,4,0.92);display:none;flex-direction:column;justify-content:center;align-items:center;z-index:100;backdrop-filter:blur(6px);}
+  #pause-menu.active{display:flex;}
+  #pause-menu h2{font:900 22px 'Orbitron',monospace;letter-spacing:6px;color:var(--cyan);text-shadow:0 0 20px var(--cyan);margin-bottom:24px;}
+  .pause-btn{font:700 11px 'Orbitron',monospace;letter-spacing:3px;padding:12px 36px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);cursor:pointer;text-transform:uppercase;margin:6px;transition:all 0.2s;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
+  .pause-btn:hover{background:rgba(0,194,255,0.12);}
+  .pause-btn.quit{border-color:var(--pink);color:var(--pink);}
+  .pause-btn.quit:hover{background:rgba(240,0,184,0.12);}
+  #pause-menu .p-hint{font:700 9px 'Orbitron',monospace;letter-spacing:2px;color:rgba(255,255,255,0.2);margin-top:18px;}
 </style>
 </head>
 <body>
+<div id="pause-menu">
+  <h2>⏸ PAUSED</h2>
+  <button class="pause-btn" id="resumeBtn">RESUME</button>
+  <button class="pause-btn quit" id="quitBtn">QUIT</button>
+  <div class="p-hint">ESC TO RESUME</div>
+</div>
 <div id="game">
   <div id="hud">
     <div>LOCK: <span class="hud-pink" id="lockId">SIGNAL-BREACH-01</span></div>
@@ -557,8 +571,19 @@ function shiftBarrel(idx, dir) {
 function selectNext() { selectedBarrel = (selectedBarrel + 1) % N_STRIPS; }
 function selectPrev() { selectedBarrel = (selectedBarrel - 1 + N_STRIPS) % N_STRIPS; }
 
+// ─── PAUSE SYSTEM ────────────────────────────────────────
+let isPaused=false;
+const pauseMenu=document.getElementById('pause-menu');
+function pauseGame(){if(isPaused)return;isPaused=true;pauseMenu.classList.add('active');}
+function resumeGame(){if(!isPaused)return;isPaused=false;pauseMenu.classList.remove('active');}
+function quitGame(){isPaused=true;pauseMenu.classList.remove('active');window.parent.postMessage({type:'game-quit',id:'holo-lock'},'*');}
+document.getElementById('resumeBtn').addEventListener('click',resumeGame);
+document.getElementById('quitBtn').addEventListener('click',quitGame);
+
 // Keyboard
 document.addEventListener('keydown', e => {
+  if(e.code==='Escape'){e.preventDefault();if(isPaused)resumeGame();else pauseGame();return;}
+  if(isPaused)return;
   if (e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); shiftBarrel(selectedBarrel, -1); }
   if (e.code === 'ArrowDown' || e.code === 'KeyS') { e.preventDefault(); shiftBarrel(selectedBarrel, 1); }
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') { e.preventDefault(); selectPrev(); }
