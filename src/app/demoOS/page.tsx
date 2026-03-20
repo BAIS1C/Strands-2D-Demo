@@ -325,6 +325,90 @@ function MusicPlayerContent() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   SOUNDWAVE LAUNCHER — Preliminary screen: run in-window or new tab
+   ═══════════════════════════════════════════════════════════════ */
+
+function SoundWaveLauncher() {
+  const [mode, setMode] = useState<'choose' | 'iframe'>('choose');
+
+  if (mode === 'iframe') {
+    return (
+      <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
+        <div
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '6px 12px', background: 'rgba(0,194,255,0.06)',
+            borderBottom: '1px solid rgba(0,194,255,0.12)', fontSize: '0.75rem',
+            color: '#a0aec0', flexShrink: 0,
+          }}
+        >
+          <span>🎵 Strands SoundWave — ACE Step Studio</span>
+          <button
+            onClick={() => setMode('choose')}
+            style={{
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+              color: '#a0aec0', padding: '2px 8px', borderRadius: 4, cursor: 'pointer',
+              fontSize: '0.7rem',
+            }}
+          >
+            ← Back
+          </button>
+        </div>
+        <iframe
+          src="/stepstudio/"
+          title="SoundWave — ACE Step Studio"
+          style={{ flex: 1, width: '100%', border: 'none', background: '#0a0a0f', borderRadius: '0 0 4px 4px' }}
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.appBody} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, padding: 32 }}>
+      <div style={{ fontSize: '3rem', lineHeight: 1 }}>🎵</div>
+      <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: '1.1rem', color: '#00C2FF', textAlign: 'center', letterSpacing: 2 }}>
+        STRANDS SOUNDWAVE
+      </div>
+      <div style={{ fontSize: '0.78rem', color: '#a0aec0', textAlign: 'center', maxWidth: 320, lineHeight: 1.5 }}>
+        AI Music Studio powered by ACE-Step 1.5. Create, remix, and generate tracks with text prompts.
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 280, marginTop: 8 }}>
+        <button
+          onClick={() => setMode('iframe')}
+          style={{
+            padding: '12px 16px', borderRadius: 6, border: '1px solid rgba(0,194,255,0.3)',
+            background: 'linear-gradient(135deg, rgba(0,194,255,0.12), rgba(139,92,246,0.08))',
+            color: '#00C2FF', cursor: 'pointer', fontFamily: "'Orbitron', sans-serif",
+            fontSize: '0.8rem', letterSpacing: 1, transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,194,255,0.22), rgba(139,92,246,0.16))'; e.currentTarget.style.borderColor = 'rgba(0,194,255,0.5)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,194,255,0.12), rgba(139,92,246,0.08))'; e.currentTarget.style.borderColor = 'rgba(0,194,255,0.3)'; }}
+        >
+          ▶ RUN IN WINDOW
+        </button>
+        <button
+          onClick={() => window.open('/stepstudio/', '_blank')}
+          style={{
+            padding: '12px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)',
+            background: 'rgba(255,255,255,0.04)', color: '#a0aec0', cursor: 'pointer',
+            fontFamily: "'Rajdhani', sans-serif", fontSize: '0.85rem', letterSpacing: 0.5,
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#e2e8f0'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#a0aec0'; }}
+        >
+          ↗ OPEN IN NEW TAB
+        </button>
+      </div>
+      <div style={{ fontSize: '0.65rem', color: 'rgba(160,174,192,0.5)', textAlign: 'center', marginTop: 8 }}>
+        Demo mode · Max 30s tracks · 5 generations/hour
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
    APP CONTENT — What each window shows when opened
    ═══════════════════════════════════════════════════════════════ */
 
@@ -420,22 +504,7 @@ function AppContent({ appId }: { appId: string }) {
       return <MusicPlayerContent />;
 
     case 'soundwave':
-      return (
-        <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
-          <iframe
-            src="/stepstudio/"
-            title="SoundWave — ACE Step Studio"
-            style={{
-              flex: 1,
-              width: '100%',
-              border: 'none',
-              background: '#0a0a0f',
-              borderRadius: '0 0 4px 4px',
-            }}
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-        </div>
-      );
+      return <SoundWaveLauncher />;
 
     case 'signal-reg':
       return (
