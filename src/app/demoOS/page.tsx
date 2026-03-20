@@ -100,6 +100,7 @@ const APP_REGISTRY: AppManifest[] = [
   { id: 'myconsent',     label: 'MyConsent',             icon: '🛡️', minWidth: 400, minHeight: 400, defaultWidth: 460, defaultHeight: 480, state: 'available' },
 
   // ── Sync-gated — show progress bar until threshold ──
+  { id: 'signal-training', label: 'Signal Training',    icon: '🎯', minWidth: 640, minHeight: 480, defaultWidth: 800, defaultHeight: 600, state: 'available' },
   { id: 'arcade-2042',   label: 'Arcade 2042',          icon: '🕹️', minWidth: 480, minHeight: 620, defaultWidth: 500, defaultHeight: 680, state: 'available' },
   { id: 'holo-lock',     label: 'Holo-Lock',            icon: '🔓', minWidth: 520, minHeight: 500, defaultWidth: 540, defaultHeight: 540, state: 'available' },
 
@@ -699,6 +700,24 @@ function AppContent({ appId }: { appId: string }) {
             </div>
             <div className={styles.consentFooter}>Your data. Your rules. SOVcorp compliance: ENFORCED.</div>
           </div>
+        </div>
+      );
+
+    case 'signal-training':
+      return (
+        <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
+          <iframe
+            src="/games/strands-tutorial-fps.html"
+            title="Signal Training — StrandsNation Tutorial"
+            style={{
+              flex: 1,
+              width: '100%',
+              border: 'none',
+              background: '#0A0B0D',
+              borderRadius: '0 0 4px 4px',
+            }}
+            sandbox="allow-scripts allow-same-origin allow-popups"
+          />
         </div>
       );
 
