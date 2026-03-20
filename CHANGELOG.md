@@ -11,7 +11,9 @@
 - **Architecture document** — `ARCH_ACEStep_DemoOS_Integration.md` added to Game Canon 2026. Covers two deployment options (local tunnel vs HuggingFace Space), naming corrections, Mymories spec, corrected app registry.
 
 ### Changed
-- **Codex applet** — Now embeds `demo.strandsnation.xyz/#codex` in an iframe inside the window instead of showing static lore entries + external link. The real Codex from the main site renders inside the DemoOS floating window.
+- **SoundWave applet** — Replaced custom ACE Step form with iframe embedding the actual StepStudio UI (`/stepstudio/`). The real Project Ace StepStudio React app renders inside the DemoOS window, preserving all existing controls, theming, and functionality. Requires StepStudio to be built and served at `/stepstudio/`.
+- **Codex applet** — Fixed iframe URL from `https://demo.strandsnation.xyz/#codex` (loaded full game page) to `/codex` (same-origin relative path, loads actual Codex section).
+- **Icon grid layout** — Changed `.iconGroup` and `.iconGroupHidden` to `display: contents` so individual icons participate directly in parent flex column-first flow. Fixes half-empty first column bug. Applied `opacity: 0.5` directly on `.iconSlotHidden` (child selector broke with `display: contents`).
 - **Window minimize behaviour** — Changed from unmounting (`return null`) to CSS `display: none`. Audio and all component state now persists when windows are minimized. Affects all applets.
 - **SoundWave naming** — Corrected: SoundWave = ACE Step Studio (AI music generation). Was previously used for the soundtrack player.
 - **Progress bar hover** — `.progressTrack` now expands from 4px to 6px on hover, with cursor pointer.
@@ -22,6 +24,9 @@
 
 ### Fixed
 - **Mymories component mismatch** — Was mapped to `LockedApp` despite `state: 'available'`. Now uses dedicated `MymoriesApp` landing view.
+- **Codex iframe target** — Was loading full game page (`/#codex`) instead of the Codex route (`/codex`). Nav.tsx confirmed `/codex` is the correct path.
+- **Icon grid column fill** — Icons were filling row-by-row with first column half-empty. `.iconGroup` wrapper divs were breaking flex column wrapping. `display: contents` fix lets icons flow as flat flex children.
+- **`display: contents` child selector breakage** — `.iconGroupHidden .iconSlotHidden` opacity rule stopped working when parent became `display: contents`. Moved opacity directly to `.iconSlotHidden`.
 
 ---
 

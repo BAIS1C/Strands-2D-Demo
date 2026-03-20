@@ -10,14 +10,14 @@
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Window Manager | ✅ Done | Drag, resize, stack, minimize (CSS hidden), maximize, close |
-| Icon Grid | ✅ Done | Standard OS + Strands apps + locked + hidden groups |
+| Icon Grid | ✅ Done | Column-first fill via `display: contents`, Standard OS + Strands apps + locked + hidden groups |
 | Taskbar | ✅ Done | Open apps, Sync meter, Bridge Level, SGT clock, era toggle |
 | Boot Sequence | ✅ Done | Terminal-style animation |
 | Desktop Surface | ✅ Done | Circuit pattern, gradients, scanlines |
 | Music Player (🎶) | ✅ Done | Real audio, full playlist, seek, volume, waveform vis |
-| SoundWave / ACE Step (🎵) | ✅ UI Shell | Form fields render, no API wired. Generate button = no-op |
+| SoundWave / ACE Step (🎵) | ✅ UI Shell | Iframes real StepStudio UI at `/stepstudio/`. Needs StepStudio build + API tunnel/HF Space |
 | Mymories (🧠) | ✅ Done | Landing page, GitHub install link, docs link, narrative |
-| Codex (📖) | ✅ Done | Embeds demo.strandsnation.xyz/#codex via iframe |
+| Codex (📖) | ✅ Done | Embeds `/codex` via same-origin iframe |
 | Messages (💬) | ✅ Done | Static chat preview with NPCs + KASAI anomaly |
 | Signal Reg (📡) | ✅ Done | Demo profile display |
 | Bridge App (🌉) | ✅ Done | 10-level vis, sync breakdown, calendar gate |
@@ -32,6 +32,7 @@
 
 | Task | Priority | Dependency | Est. |
 |------|----------|------------|------|
+| **Build StepStudio to `/stepstudio/`** | HIGH | `npm run build` in Project Ace, copy dist to `public/stepstudio/` | 0.5 day |
 | **ACE Step API wiring** | HIGH | Cloudflare Tunnel OR HuggingFace Space | 1-2 days |
 | Arcade 2042 game embed | HIGH | `game_2042.html` in `/public/games/` | 0.5 day |
 | Holo-Lock game embed | HIGH | `game_holoLock.html` in `/public/games/` | 0.5 day |
@@ -49,6 +50,8 @@
 
 ### Files Modified This Session
 
-- `src/app/demoOS/page.tsx` — MusicPlayerContent component, SoundWave ACE Step UI, Mymories landing, Codex iframe, minimize fix, registry updates
-- `src/app/demoOS/page.module.css` — ACE Step styles, Mymories styles, progress bar hover
+- `src/app/demoOS/page.tsx` — MusicPlayerContent component, SoundWave iframe embed, Mymories landing, Codex iframe fix, minimize fix, registry updates
+- `src/app/demoOS/page.module.css` — ACE Step styles (now unused — iframe), Mymories styles, progress bar hover, icon grid `display: contents` fix
 - `Game Canon 2026/ARCH_ACEStep_DemoOS_Integration.md` — New architecture document
+- `CHANGELOG.md` — Full session changelog
+- `BUILD_STATUS.md` — This file

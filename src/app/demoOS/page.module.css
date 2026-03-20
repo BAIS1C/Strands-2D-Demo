@@ -189,28 +189,26 @@
   width: auto;
 }
 
-/* Icon groups — flow vertically then wrap to next column */
+/* Legacy group wrappers — now transparent, children flow via parent flex */
 .iconGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: contents;
 }
 
-/* Separator between icon groups — horizontal line in column layout */
+/* Separator between icon groups — thin line that takes a slot in the column flow */
 .iconSep {
   width: 84px;
   height: 1px;
   background: linear-gradient(90deg, transparent 10%, rgba(0, 194, 255, 0.1) 50%, transparent 90%);
   margin: 4px 0;
+  flex-shrink: 0;
 }
 
-/* Hidden icons group */
+/* Hidden icons group — also transparent wrapper */
 .iconGroupHidden {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  opacity: 0.5;
+  display: contents;
 }
+
+/* Hidden icons: opacity is set directly on .iconSlotHidden (see below) */
 
 /* ─── DESKTOP ICON ─── */
 
@@ -306,6 +304,7 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  opacity: 0.5;
 }
 
 .glitchChar {

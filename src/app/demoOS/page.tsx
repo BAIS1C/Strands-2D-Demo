@@ -421,34 +421,19 @@ function AppContent({ appId }: { appId: string }) {
 
     case 'soundwave':
       return (
-        <div className={styles.appBody}>
-          <div className={styles.appHeader}>SOUNDWAVE // ACE STEP STUDIO</div>
-          <div className={styles.aceStudio}>
-            <div className={styles.aceLabel}>AI MUSIC GENERATION</div>
-            <div className={styles.aceDesc}>
-              Generate original music from text descriptions. Powered by ACE-Step 1.5 — commercial-grade AI music generation running on consumer hardware.
-            </div>
-            <div className={styles.aceForm}>
-              <textarea className={styles.acePrompt} placeholder="Describe the music you want to create... e.g. &quot;dark synthwave with whispered vocals about digital consciousness&quot;" rows={3} />
-              <textarea className={styles.aceLyrics} placeholder="Lyrics (optional) — paste lyrics or leave blank for instrumental" rows={4} />
-              <div className={styles.aceControls}>
-                <label className={styles.aceField}>
-                  <span>Duration</span>
-                  <select defaultValue="30"><option value="10">10s</option><option value="20">20s</option><option value="30">30s</option></select>
-                </label>
-                <label className={styles.aceField}>
-                  <span>BPM</span>
-                  <input type="number" placeholder="120" min={60} max={200} />
-                </label>
-                <label className={styles.aceField}>
-                  <span>Language</span>
-                  <select defaultValue="en"><option value="en">English</option><option value="ja">Japanese</option><option value="ko">Korean</option><option value="zh">Chinese</option><option value="unknown">Auto / Instrumental</option></select>
-                </label>
-              </div>
-              <button className={styles.aceGenerateBtn}>⚡ GENERATE</button>
-              <div className={styles.aceDemoNote}>DEMO MODE — 30s max · Powered by ACE-Step 1.5</div>
-            </div>
-          </div>
+        <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
+          <iframe
+            src="/stepstudio/"
+            title="SoundWave — ACE Step Studio"
+            style={{
+              flex: 1,
+              width: '100%',
+              border: 'none',
+              background: '#0a0a0f',
+              borderRadius: '0 0 4px 4px',
+            }}
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
         </div>
       );
 
@@ -538,7 +523,7 @@ function AppContent({ appId }: { appId: string }) {
         <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
           <div className={styles.appHeader} style={{ padding: '8px 12px' }}>THE CODEX</div>
           <iframe
-            src="https://demo.strandsnation.xyz/#codex"
+            src="/codex"
             title="The Codex — StrandsNation"
             style={{
               flex: 1,
