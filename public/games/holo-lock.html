@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>HOLO-LOCK // SIGNAL BREACH</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --cyan:#00C2FF;--pink:#F000B8;--bg:#030304;
+    --warn:#FFB800;--green:#22c55e;--dim:rgba(0,194,255,0.08);
+  }
+  body{
+    background:var(--bg);min-height:100vh;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Rajdhani',sans-serif;
+    overflow:hidden;user-select:none;-webkit-user-select:none;
+  }
+  #game{
+    position:relative;
+    width:min(520px,98vw);
+    display:flex;flex-direction:column;align-items:center;
+    gap:16px;padding:16px 0;
+  }
+  /* HUD */
+  #hud{
+    width:100%;display:flex;justify-content:space-between;align-items:center;
+    font:700 10px 'Orbitron',monospace;letter-spacing:2px;
+    padding:0 8px;color:rgba(0,194,255,0.35);
+  }
+  .hud-val{color:var(--cyan);}
+  .hud-pink{color:var(--pink);}
+
+  /* LOCK FRAME */
+  #lockWrap{
+    position:relative;
+    padding:3px;
+    background:linear-gradient(135deg,rgba(0,194,255,0.06),rgba(240,0,184,0.04));
+    border:1px solid rgba(0,194,255,0.12);
+    border-radius:6px;
+  }
+  /* corner accents */
+  #lockWrap::before,#lockWrap::after{
+    content:'';position:absolute;width:20px;height:20px;
+    border-color:rgba(0,194,255,0.3);border-style:solid;
+  }
+  #lockWrap::before{top:-1px;left:-1px;border-width:2px 0 0 2px;border-radius:6px 0 0 0;}
+  #lockWrap::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0;border-radius:0 0 6px 0;}
+
+  #lockCanvas{display:block;border-radius:4px;}
+
+  /* SEAM INDICATORS */
+  #seams{
+    display:flex;flex-direction:column;gap:0;
+    position:absolute;left:-20px;top:3px;bottom:3px;
+    justify-content:space-around;padding:0;
+  }
+  .seam-dot{
+    width:8px;height:8px;border-radius:50%;
+    border:1px solid rgba(0,194,255,0.2);
+    background:transparent;
+    transition:all 0.4s;
+  }
+  .seam-dot.match{background:var(--green);border-color:var(--green);box-shadow:0 0 8px rgba(34,197,94,0.5);}
+
+  /* STATUS / HINT */
+  #statusArea{
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    width:100%;
+  }
+  #statusMsg{
+    font:700 11px 'Orbitron',monospace;letter-spacing:3px;
+    color:rgba(0,194,255,0.5);text-transform:uppercase;
+    min-height:18px;text-align:center;
+  }
+  #hintMsg{font:300 12px 'Rajdhani',sans-serif;color:rgba(255,255,255,0.3);text-align:center;}
+
+  /* CONTROLS ROW */
+  #ctrlRow{
+    display:flex;gap:10px;align-items:center;
+    margin-top:4px;
+  }
+  .ctrl-btn{
+    width:44px;height:44px;
+    border:1px solid rgba(0,194,255,0.2);border-radius:4px;
+    background:rgba(0,194,255,0.03);
+    color:var(--cyan);font:700 18px 'Rajdhani',sans-serif;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;
+  }
+  .ctrl-btn:hover,.ctrl-btn:active{background:rgba(0,194,255,0.1);border-color:var(--cyan);box-shadow:0 0 12px rgba(0,194,255,0.15);}
+  .ctrl-label{font:700 9px 'Orbitron',monospace;letter-spacing:2px;color:rgba(255,255,255,0.2);min-width:30px;text-align:center;}
+
+  /* COMPLETE PANEL */
+  #complete{
+    display:none;position:absolute;inset:0;
+    flex-direction:column;align-items:center;justify-content:center;
+    gap:12px;
+    background:rgba(3,3,4,0.92);
+    border-radius:6px;z-index:30;
+  }
+  #complete.show{display:flex;}
+  .breach-title{font:900 36px 'Orbitron',monospace;letter-spacing:6px;color:var(--green);text-shadow:0 0 30px rgba(34,197,94,0.5);}
+  .breach-sub{font:700 11px 'Orbitron',monospace;letter-spacing:4px;color:rgba(255,255,255,0.3);}
+  .breach-score{font:700 22px 'Orbitron',monospace;color:var(--cyan);text-shadow:0 0 16px var(--cyan);}
+  .breach-btn{
+    margin-top:8px;padding:10px 28px;
+    font:700 11px 'Orbitron',monospace;letter-spacing:3px;
+    background:transparent;border:1px solid var(--cyan);color:var(--cyan);
+    cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+    transition:all 0.2s;
+  }
+  .breach-btn:hover{background:rgba(0,194,255,0.1);box-shadow:0 0 16px rgba(0,194,255,0.2);}
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="hud">
+    <div>LOCK: <span class="hud-pink" id="lockId">SIGNAL-BREACH-01</span></div>
+    <div>MOVES: <span class="hud-val" id="movesHud">0</span></div>
+    <div>TIER: <span class="hud-val" id="tierHud">1</span></div>
+  </div>
+
+  <div id="lockWrap">
+    <canvas id="lockCanvas"></canvas>
+    <div id="seams"></div>
+
+    <!-- Complete overlay -->
+    <div id="complete">
+      <div class="breach-sub">ACCESS GRANTED</div>
+      <div class="breach-title">BREACHED</div>
+      <div class="breach-sub">CIRCUIT ALIGNED // SIGNAL RELEASED</div>
+      <div class="breach-score" id="breachScore"></div>
+      <button class="breach-btn" onclick="newPuzzle()">NEXT LOCK ▶</button>
+    </div>
+  </div>
+
+  <div id="statusArea">
+    <div id="statusMsg">ALIGN THE CIRCUIT TO BREACH</div>
+    <div id="hintMsg">Scroll or drag each strip vertically · One image unlocks</div>
+  </div>
+
+  <div id="ctrlRow">
+    <div class="ctrl-label">STRIP</div>
+    <button class="ctrl-btn" id="btnL" onclick="shiftBarrel(selectedBarrel,-1)">▲</button>
+    <button class="ctrl-btn" id="btnR" onclick="shiftBarrel(selectedBarrel,1)">▼</button>
+    <div class="ctrl-label" style="margin-left:12px">SELECT</div>
+    <button class="ctrl-btn" onclick="selectPrev()">◀</button>
+    <button class="ctrl-btn" onclick="selectNext()">▶</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  HOLO-LOCK — Circuit Tumbler
+//
+//  4 HORIZONTAL strips stacked vertically.
+//  Each strip can cycle through 4 image bands (one per circuit image).
+//  The correct unlock has one band per strip that, when all aligned,
+//  form a single coherent circuit image across all 4 seams.
+//  Wrong positions: wires terminate at seam — circuit is broken.
+//  Correct: traces connect perfectly, circuit glows, lock opens.
+// ═══════════════════════════════════════════════════════════
+
+const cvs = document.getElementById('lockCanvas');
+const ctx = cvs.getContext('2d');
+
+const isMobile = window.innerWidth < 480;
+const LW = isMobile ? Math.min(340, window.innerWidth - 40) : 460;
+const STRIP_H = 90;
+const N_STRIPS = 4;
+const N_IMAGES = 4;  // 4 circuit images per strip position
+const LH = STRIP_H * N_STRIPS;
+
+cvs.width = LW;
+cvs.height = LH;
+
+// ─── COLORS ───────────────────────────────────────────────
+const C = {
+  bg:'#030304',panel:'#070d14',
+  cyan:'#00C2FF',pink:'#F000B8',
+  green:'#22c55e',warn:'#FFB800',
+  trace:'rgba(0,194,255,0.85)',
+  traceDim:'rgba(0,194,255,0.15)',
+  node:'#00C2FF',
+  broken:'rgba(255,51,85,0.7)',
+};
+
+// ─── GAME STATE ───────────────────────────────────────────
+let TIER = 1;
+let correctImage = 0;    // which of the 4 circuits is the answer
+let barrels = [0,0,0,0]; // current position per strip (0-3)
+let selectedBarrel = 0;
+let moves = 0;
+let solved = false;
+let solveAnim = 0;
+let animFrame = 0;
+let dragStart = null, dragBarrel = -1;
+
+// ─── CIRCUIT DEFINITIONS ──────────────────────────────────
+// Each circuit image is defined as a set of trace paths and nodes.
+// A path is an array of [x,y] normalized (0–1) points.
+// The strip shows a horizontal slice of the image.
+// We generate 4 distinct circuits procedurally.
+
+function genCircuit(seed) {
+  // Deterministic pseudo-random from seed
+  let rng = (() => {
+    let s = seed * 9301 + 49297;
+    return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+  })();
+
+  let traces = [];
+  let nodes = [];
+
+  // Entry points on left edge (x=0), exit on right edge (x=1)
+  // Must connect horizontally across strips with matching y at seams.
+  // Strip seams are at y = 0, 0.25, 0.5, 0.75, 1.0 (normalized to full image)
+  // Each strip = one quarter of the full image height.
+
+  const SEAM_Y = [0, 0.25, 0.5, 0.75, 1.0];
+  // Connection points at each seam (shared between strips)
+  let seamConns = [];
+  for (let s = 0; s < 5; s++) {
+    let n = 1 + Math.floor(rng() * 2); // 1 or 2 wires cross each seam
+    let conns = [];
+    for (let i = 0; i < n; i++) {
+      conns.push(0.2 + rng() * 0.6);
+    }
+    seamConns.push(conns);
+  }
+
+  // For each strip (quarter), draw traces connecting top seam conns to bottom seam conns
+  for (let strip = 0; strip < 4; strip++) {
+    let topY = strip * 0.25;
+    let botY = topY + 0.25;
+    let tops = seamConns[strip];
+    let bots = seamConns[strip + 1];
+
+    // Connect each top conn to a bottom conn with a path
+    tops.forEach((tx, ti) => {
+      let bx = bots[ti % bots.length];
+      // Bezier-style path: add a mid-point with some horizontal offset
+      let midX = 0.1 + rng() * 0.8;
+      let midY = topY + 0.05 + rng() * 0.15;
+      // Also add a branch node occasionally
+      if (rng() > 0.5) {
+        let nx = midX + (rng() - 0.5) * 0.3;
+        let ny = midY + rng() * 0.05;
+        nodes.push({ x: nx, y: topY + (ny - topY), type: rng() > 0.5 ? 'resistor' : 'cap' });
+        traces.push([
+          [tx, topY], [midX, midY], [nx, ny], [midX, midY], [bx, botY]
+        ]);
+      } else {
+        traces.push([[tx, topY], [midX, midY], [bx, botY]]);
+      }
+    });
+
+    // Extra horizontal segments within the strip
+    let extras = Math.floor(rng() * 3);
+    for (let e = 0; e < extras; e++) {
+      let y = topY + 0.04 + rng() * 0.17;
+      let x1 = rng() * 0.4;
+      let x2 = 0.5 + rng() * 0.5;
+      traces.push([[x1, y], [x2, y]]);
+      if (rng() > 0.6) nodes.push({ x: (x1 + x2) / 2, y, type: 'dot' });
+    }
+  }
+
+  return { traces, nodes, seamConns };
+}
+
+// Pre-generate 4 circuits
+let circuits = [];
+function buildCircuits() {
+  circuits = [];
+  for (let i = 0; i < N_IMAGES; i++) {
+    circuits.push(genCircuit(TIER * 100 + i * 17 + 3));
+  }
+}
+
+// ─── DRAW CIRCUIT STRIP ───────────────────────────────────
+function drawStrip(stripIdx, bandPos, x, y, w, h, glowAmt) {
+  // bandPos = which circuit image (0-3)
+  // stripIdx = which horizontal slice (0-3, i.e. which quarter of the image)
+
+  let circuit = circuits[bandPos];
+  let stripFrac = 1 / N_STRIPS;
+  let yMin = stripIdx * stripFrac;
+  let yMax = yMin + stripFrac;
+
+  ctx.save();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+
+  // Panel background
+  let grad = ctx.createLinearGradient(x, y, x, y + h);
+  grad.addColorStop(0, '#05101a');
+  grad.addColorStop(1, '#030a10');
+  ctx.fillStyle = grad;
+  ctx.fillRect(x, y, w, h);
+
+  // Subtle grid
+  ctx.strokeStyle = 'rgba(0,194,255,0.05)';
+  ctx.lineWidth = 0.5;
+  let gridSize = 20;
+  for (let gx = x; gx < x + w; gx += gridSize) {
+    ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx, y + h); ctx.stroke();
+  }
+  for (let gy = y; gy < y + h; gy += gridSize) {
+    ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x + w, gy); ctx.stroke();
+  }
+
+  // Transform: map circuit coordinates to canvas
+  // Circuit x: 0→1 maps to canvas x..x+w
+  // Circuit y: yMin..yMax maps to canvas y..y+h
+
+  function mapX(cx) { return x + cx * w; }
+  function mapY(cy) { return y + ((cy - yMin) / stripFrac) * h; }
+
+  let isCorrect = bandPos === correctImage;
+  let traceCol = glowAmt > 0
+    ? `rgba(${Math.round(glowAmt * 34 + (1 - glowAmt) * 0)},${Math.round(glowAmt * 255)},${Math.round(glowAmt * 200 + (1 - glowAmt) * 0)},${0.7 + glowAmt * 0.3})`
+    : C.traceDim;
+  let nodeCol = glowAmt > 0 ? C.green : C.traceDim;
+
+  // Draw traces (only the portion within this strip)
+  ctx.lineWidth = glowAmt > 0 ? 2 + glowAmt * 1.5 : 1.2;
+  ctx.strokeStyle = traceCol;
+  if (glowAmt > 0) { ctx.shadowColor = '#22c55e'; ctx.shadowBlur = 8 * glowAmt; }
+
+  circuit.traces.forEach(pts => {
+    // Filter to points within this strip's y range (with small margin)
+    let pathPts = [];
+    for (let i = 0; i < pts.length; i++) {
+      let [cx, cy] = pts[i];
+      if (cy >= yMin - 0.01 && cy <= yMax + 0.01) {
+        pathPts.push([cx, Math.max(yMin, Math.min(yMax, cy))]);
+      }
+    }
+    if (pathPts.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(mapX(pathPts[0][0]), mapY(pathPts[0][1]));
+    for (let i = 1; i < pathPts.length; i++) {
+      ctx.lineTo(mapX(pathPts[i][0]), mapY(pathPts[i][1]));
+    }
+    ctx.stroke();
+  });
+
+  // Draw nodes
+  ctx.shadowBlur = 0;
+  circuit.nodes.forEach(nd => {
+    if (nd.y < yMin || nd.y > yMax) return;
+    let nx = mapX(nd.x), ny = mapY(nd.y);
+    if (nd.type === 'dot') {
+      ctx.fillStyle = nodeCol;
+      ctx.shadowColor = nodeCol; ctx.shadowBlur = glowAmt > 0 ? 8 : 0;
+      ctx.beginPath(); ctx.arc(nx, ny, 3, 0, Math.PI * 2); ctx.fill();
+    } else if (nd.type === 'resistor') {
+      ctx.strokeStyle = nodeCol;
+      ctx.shadowColor = nodeCol; ctx.shadowBlur = glowAmt > 0 ? 6 : 0;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(nx - 7, ny - 3, 14, 6);
+      // center line
+      ctx.beginPath(); ctx.moveTo(nx - 10, ny); ctx.lineTo(nx - 7, ny); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(nx + 7, ny); ctx.lineTo(nx + 10, ny); ctx.stroke();
+    } else { // cap
+      ctx.strokeStyle = nodeCol;
+      ctx.shadowColor = nodeCol; ctx.shadowBlur = glowAmt > 0 ? 6 : 0;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(nx - 4, ny - 5); ctx.lineTo(nx - 4, ny + 5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(nx + 4, ny - 5); ctx.lineTo(nx + 4, ny + 5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(nx - 8, ny); ctx.lineTo(nx - 4, ny); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(nx + 4, ny); ctx.lineTo(nx + 8, ny); ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+  });
+
+  // Connection points at seam edges (top and bottom of strip)
+  [yMin, yMax].forEach((sy, si) => {
+    let sIdx = stripIdx + si;
+    if (sIdx < 0 || sIdx > 4) return;
+    let conns = circuit.seamConns[sIdx];
+    conns.forEach(cx => {
+      let px = mapX(cx);
+      let py = mapY(sy);
+      ctx.fillStyle = glowAmt > 0 ? '#22c55e' : 'rgba(0,194,255,0.3)';
+      ctx.shadowColor = glowAmt > 0 ? '#22c55e' : C.cyan;
+      ctx.shadowBlur = glowAmt > 0 ? 10 : 3;
+      ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+  });
+
+  ctx.restore();
+}
+
+// ─── DRAW SEAM ────────────────────────────────────────────
+function drawSeam(y, isMatch) {
+  ctx.save();
+  ctx.strokeStyle = isMatch ? 'rgba(34,197,94,0.5)' : 'rgba(0,194,255,0.12)';
+  ctx.lineWidth = isMatch ? 2 : 1;
+  if (isMatch) { ctx.shadowColor = '#22c55e'; ctx.shadowBlur = 6; }
+  ctx.setLineDash(isMatch ? [] : [4, 6]);
+  ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(LW, y); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+// ─── CHECK SOLVED ─────────────────────────────────────────
+function checkSolved() {
+  return barrels.every(b => b === correctImage);
+}
+
+function getSeamMatches() {
+  // A seam "matches" if both adjacent strips show the same band (correct image)
+  // and their connection points align.
+  // Simplified: seam matches if both strips adjacent show correctImage.
+  let matches = [];
+  for (let i = 0; i < 3; i++) {
+    matches.push(barrels[i] === correctImage && barrels[i + 1] === correctImage);
+  }
+  return matches;
+}
+
+function getStripMatches() {
+  return barrels.map(b => b === correctImage);
+}
+
+// ─── RENDER ───────────────────────────────────────────────
+function render() {
+  animFrame++;
+  ctx.fillStyle = C.bg;
+  ctx.fillRect(0, 0, LW, LH);
+
+  let seamMatches = getSeamMatches();
+  let stripMatches = getStripMatches();
+
+  let glow = solved ? Math.min(1, solveAnim / 60) : 0;
+
+  // Draw each strip
+  for (let i = 0; i < N_STRIPS; i++) {
+    let sy = i * STRIP_H;
+    let stripGlow = stripMatches[i] ? glow : 0;
+    drawStrip(i, barrels[i], 0, sy, LW, STRIP_H, stripGlow);
+
+    // Selection highlight
+    if (i === selectedBarrel && !solved) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0,194,255,0.25)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, sy + 1, LW - 2, STRIP_H - 2);
+      // Left tab
+      ctx.fillStyle = 'rgba(0,194,255,0.15)';
+      ctx.fillRect(0, sy, 4, STRIP_H);
+      ctx.restore();
+    }
+  }
+
+  // Seams
+  for (let i = 1; i < N_STRIPS; i++) {
+    drawSeam(i * STRIP_H, seamMatches[i - 1]);
+  }
+
+  // Glow solve effect
+  if (glow > 0) {
+    ctx.save();
+    ctx.globalAlpha = glow * 0.15;
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(0, 0, LW, LH);
+    ctx.restore();
+    // Pulse border
+    ctx.save();
+    ctx.strokeStyle = `rgba(34,197,94,${0.6 * glow})`;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = '#22c55e';
+    ctx.shadowBlur = 20 * glow;
+    ctx.strokeRect(1, 1, LW - 2, LH - 2);
+    ctx.restore();
+    solveAnim++;
+  }
+
+  // Band indicator (right side) — shows which of 4 positions we're at
+  for (let i = 0; i < N_STRIPS; i++) {
+    let sy = i * STRIP_H + STRIP_H / 2;
+    for (let b = 0; b < N_IMAGES; b++) {
+      let dotY = sy - (N_IMAGES - 1) * 6 + b * 12;
+      ctx.fillStyle = barrels[i] === b
+        ? (b === correctImage && solved ? '#22c55e' : C.cyan)
+        : 'rgba(0,194,255,0.12)';
+      if (barrels[i] === b) { ctx.shadowColor = C.cyan; ctx.shadowBlur = 4; }
+      ctx.beginPath();
+      ctx.arc(LW - 8, dotY, barrels[i] === b ? 3 : 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  // Update seam dots in DOM
+  updateSeamDots(seamMatches);
+  updateStripDots(stripMatches);
+}
+
+function updateSeamDots(seamMatches) {
+  let dots = document.querySelectorAll('.seam-dot');
+  seamMatches.forEach((m, i) => {
+    if (dots[i]) dots[i].classList.toggle('match', m);
+  });
+}
+
+function updateStripDots(stripMatches) {
+  // Update status message
+  let correctCount = barrels.filter(b => b === correctImage).length;
+  let msg = document.getElementById('statusMsg');
+  let hint = document.getElementById('hintMsg');
+  if (!solved) {
+    if (correctCount === 0) { msg.textContent = 'ALIGN THE CIRCUIT TO BREACH'; msg.style.color = 'rgba(0,194,255,0.4)'; }
+    else if (correctCount === 1) { msg.textContent = '▌ TRACE DETECTED'; msg.style.color = C.cyan; }
+    else if (correctCount === 2) { msg.textContent = '▌▌ PARTIAL ALIGNMENT'; msg.style.color = C.warn; }
+    else if (correctCount === 3) { msg.textContent = '▌▌▌ CIRCUIT ALMOST COMPLETE'; msg.style.color = '#ff8800'; }
+    hint.textContent = `MOVES: ${moves} · STRIPS ALIGNED: ${correctCount}/4`;
+  }
+}
+
+// ─── SEAM DOTS (sidebar) ──────────────────────────────────
+function buildSeamDots() {
+  let c = document.getElementById('seams');
+  c.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    let d = document.createElement('div');
+    d.className = 'seam-dot';
+    d.id = `seam${i}`;
+    c.appendChild(d);
+  }
+}
+
+// ─── INPUT ────────────────────────────────────────────────
+function shiftBarrel(idx, dir) {
+  if (solved) return;
+  barrels[idx] = (barrels[idx] + dir + N_IMAGES) % N_IMAGES;
+  moves++;
+  document.getElementById('movesHud').textContent = moves;
+
+  if (checkSolved()) {
+    solved = true;
+    solveAnim = 0;
+    setTimeout(() => {
+      let sc = document.getElementById('breachScore');
+      let bonus = Math.max(0, 1000 - moves * 20) + TIER * 500;
+      sc.textContent = `SCORE: ${bonus.toLocaleString()}`;
+      document.getElementById('complete').classList.add('show');
+    }, 1000);
+  }
+}
+
+function selectNext() { selectedBarrel = (selectedBarrel + 1) % N_STRIPS; }
+function selectPrev() { selectedBarrel = (selectedBarrel - 1 + N_STRIPS) % N_STRIPS; }
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); shiftBarrel(selectedBarrel, -1); }
+  if (e.code === 'ArrowDown' || e.code === 'KeyS') { e.preventDefault(); shiftBarrel(selectedBarrel, 1); }
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA') { e.preventDefault(); selectPrev(); }
+  if (e.code === 'ArrowRight' || e.code === 'KeyD') { e.preventDefault(); selectNext(); }
+  if (e.code === 'Digit1') selectedBarrel = 0;
+  if (e.code === 'Digit2') selectedBarrel = 1;
+  if (e.code === 'Digit3') selectedBarrel = 2;
+  if (e.code === 'Digit4') selectedBarrel = 3;
+});
+
+// Scroll
+cvs.addEventListener('wheel', e => {
+  e.preventDefault();
+  let stripIdx = Math.floor(e.offsetY / STRIP_H);
+  if (stripIdx >= 0 && stripIdx < N_STRIPS) {
+    selectedBarrel = stripIdx;
+    shiftBarrel(stripIdx, e.deltaY > 0 ? 1 : -1);
+  }
+}, { passive: false });
+
+// Click to select
+cvs.addEventListener('click', e => {
+  let r = cvs.getBoundingClientRect();
+  let py = (e.clientY - r.top) * (LH / r.height);
+  let stripIdx = Math.floor(py / STRIP_H);
+  if (stripIdx >= 0 && stripIdx < N_STRIPS) selectedBarrel = stripIdx;
+});
+
+// Touch drag
+cvs.addEventListener('touchstart', e => {
+  e.preventDefault();
+  let r = cvs.getBoundingClientRect();
+  let t = e.touches[0];
+  let py = (t.clientY - r.top) * (LH / r.height);
+  dragBarrel = Math.floor(py / STRIP_H);
+  if (dragBarrel >= 0 && dragBarrel < N_STRIPS) {
+    selectedBarrel = dragBarrel;
+    dragStart = t.clientY;
+  }
+}, { passive: false });
+
+cvs.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (dragBarrel < 0 || dragStart === null) return;
+  let dy = e.touches[0].clientY - dragStart;
+  if (Math.abs(dy) > 30) {
+    shiftBarrel(dragBarrel, dy > 0 ? 1 : -1);
+    dragStart = e.touches[0].clientY;
+  }
+}, { passive: false });
+
+cvs.addEventListener('touchend', e => { e.preventDefault(); dragBarrel = -1; dragStart = null; }, { passive: false });
+
+// ─── PUZZLE INIT ──────────────────────────────────────────
+function newPuzzle() {
+  document.getElementById('complete').classList.remove('show');
+  correctImage = Math.floor(Math.random() * N_IMAGES);
+  // Start with random positions (not solved)
+  do {
+    barrels = Array.from({ length: N_STRIPS }, () => Math.floor(Math.random() * N_IMAGES));
+  } while (checkSolved());
+  moves = 0;
+  solved = false;
+  solveAnim = 0;
+  selectedBarrel = 0;
+  document.getElementById('movesHud').textContent = '0';
+  document.getElementById('lockId').textContent = `SIGNAL-BREACH-${String(TIER).padStart(2, '0')}`;
+  document.getElementById('tierHud').textContent = TIER;
+}
+
+function nextTier() {
+  TIER++;
+  buildCircuits();
+  newPuzzle();
+}
+
+// ─── LOOP ─────────────────────────────────────────────────
+function loop() {
+  render();
+  requestAnimationFrame(loop);
+}
+
+// ─── BOOT ─────────────────────────────────────────────────
+buildSeamDots();
+buildCircuits();
+newPuzzle();
+loop();
+</script>
+</body>
+</html>

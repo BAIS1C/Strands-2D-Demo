@@ -591,12 +591,19 @@ function AppContent({ appId }: { appId: string }) {
 
     case 'arcade-2042':
       return (
-        <div className={styles.appBody}>
-          <div className={styles.appHeader}>ARCADE 2042 // SIGNAL ARCADE</div>
-          <div className={styles.placeholderContent}>
-            <div className={styles.placeholderIcon}>🕹️</div>
-            <div>Game loaded. Press START.</div>
-          </div>
+        <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
+          <iframe
+            src="/games/2042.html"
+            title="Arcade 2042 — Signal Arcade"
+            style={{
+              flex: 1,
+              width: '100%',
+              border: 'none',
+              background: '#030304',
+              borderRadius: '0 0 4px 4px',
+            }}
+            sandbox="allow-scripts allow-same-origin allow-popups"
+          />
         </div>
       );
 
@@ -628,12 +635,19 @@ function AppContent({ appId }: { appId: string }) {
 
     case 'holo-lock':
       return (
-        <div className={styles.appBody}>
-          <div className={styles.appHeader}>HOLO-LOCK // SIGNAL BREACH</div>
-          <div className={styles.placeholderContent}>
-            <div className={styles.placeholderIcon}>🔓</div>
-            <div>Lock sequence ready.</div>
-          </div>
+        <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
+          <iframe
+            src="/games/holo-lock.html"
+            title="Holo-Lock — Signal Breach"
+            style={{
+              flex: 1,
+              width: '100%',
+              border: 'none',
+              background: '#030304',
+              borderRadius: '0 0 4px 4px',
+            }}
+            sandbox="allow-scripts allow-same-origin allow-popups"
+          />
         </div>
       );
 

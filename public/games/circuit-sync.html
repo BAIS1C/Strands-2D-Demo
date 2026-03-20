@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>CIRCUIT SYNC // SIGNAL PATTERN</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--cyan:#00C2FF;--pink:#F000B8;--bg:#030304;--green:#22c55e;--warn:#FFB800;--red:#ff3355;}
+  body{
+    background:var(--bg);min-height:100vh;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Rajdhani',sans-serif;
+    user-select:none;-webkit-user-select:none;overflow:hidden;
+  }
+  #app{
+    width:min(500px,98vw);
+    display:flex;flex-direction:column;align-items:center;gap:0;
+  }
+
+  /* HEADER */
+  #header{
+    width:100%;padding:12px 16px 10px;
+    border-bottom:1px solid rgba(0,194,255,0.08);
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .hdr-title{font:900 16px 'Orbitron',monospace;letter-spacing:4px;color:var(--cyan);}
+  .hdr-sub{font:700 9px 'Orbitron',monospace;letter-spacing:3px;color:rgba(0,194,255,0.35);}
+  .hdr-score{font:700 18px 'Orbitron',monospace;color:var(--pink);text-shadow:0 0 12px var(--pink);}
+
+  /* STATUS BAR */
+  #statusBar{
+    width:100%;padding:8px 16px;
+    display:flex;justify-content:space-between;align-items:center;
+    background:rgba(0,194,255,0.02);
+    border-bottom:1px solid rgba(0,194,255,0.06);
+  }
+  #phaseLabel{font:700 10px 'Orbitron',monospace;letter-spacing:3px;color:rgba(255,255,255,0.4);}
+  #phaseVal{font:700 12px 'Orbitron',monospace;color:var(--cyan);}
+  #livesRow{display:flex;gap:6px;align-items:center;}
+  .life-pip{width:8px;height:8px;border-radius:50%;border:1px solid var(--cyan);background:transparent;transition:all 0.3s;}
+  .life-pip.full{background:var(--cyan);box-shadow:0 0 6px var(--cyan);}
+
+  /* MAIN ARENA */
+  #arena{
+    width:100%;
+    padding:20px 16px;
+    display:flex;flex-direction:column;align-items:center;
+    gap:20px;min-height:420px;
+    justify-content:center;
+  }
+
+  /* PATTERN DISPLAY (top - what the game shows) */
+  #patternDisplay{
+    display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
+  }
+
+  /* NODE — the basic interactive element */
+  .node{
+    width:60px;height:60px;
+    border:2px solid rgba(0,194,255,0.2);
+    border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;position:relative;
+    transition:all 0.15s;background:rgba(0,194,255,0.02);
+    font:700 22px 'Orbitron',monospace;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .node.lit{
+    background:var(--nodeCol,var(--cyan));
+    border-color:var(--nodeCol,var(--cyan));
+    box-shadow:0 0 20px var(--nodeCol,var(--cyan));
+    color:#000;
+  }
+  .node.wrong{
+    background:var(--red)!important;border-color:var(--red)!important;
+    box-shadow:0 0 20px var(--red)!important;
+    animation:shake 0.3s ease;
+  }
+  .node.correct{
+    background:var(--green)!important;border-color:var(--green)!important;
+    box-shadow:0 0 20px var(--green)!important;
+  }
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+  /* SEQUENCE GRID (player input area) */
+  #seqGrid{
+    display:grid;gap:10px;
+    grid-template-columns:repeat(3,1fr);
+    width:100%;max-width:300px;
+  }
+  .seq-node{
+    aspect-ratio:1;
+    border:1px solid rgba(0,194,255,0.15);
+    border-radius:8px;
+    background:rgba(0,194,255,0.02);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    font:700 16px 'Orbitron',monospace;
+    color:rgba(0,194,255,0.5);
+    transition:all 0.12s;
+    position:relative;overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .seq-node:hover{border-color:rgba(0,194,255,0.4);background:rgba(0,194,255,0.06);}
+  .seq-node.active{background:rgba(0,194,255,0.12);border-color:rgba(0,194,255,0.5);}
+  .seq-node::after{
+    content:'';position:absolute;inset:0;
+    background:rgba(255,255,255,0.1);opacity:0;transition:opacity 0.1s;
+  }
+  .seq-node:active::after{opacity:1;}
+
+  /* TIMELINE — shows sequence progress */
+  #timeline{
+    display:flex;gap:4px;justify-content:center;flex-wrap:wrap;
+    min-height:12px;
+  }
+  .tl-dot{
+    width:10px;height:10px;border-radius:50%;
+    border:1px solid rgba(0,194,255,0.2);background:transparent;
+    transition:all 0.2s;
+  }
+  .tl-dot.done{background:var(--green);border-color:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.4);}
+  .tl-dot.current{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 6px var(--cyan);animation:pulse 0.6s ease-in-out infinite alternate;}
+  .tl-dot.wrong{background:var(--red);border-color:var(--red);}
+  @keyframes pulse{from{opacity:0.5;transform:scale(0.9)}to{opacity:1;transform:scale(1.1)}}
+
+  /* INSTRUCTION / PHASE MSG */
+  #phaseMsg{
+    font:700 11px 'Orbitron',monospace;letter-spacing:3px;
+    color:rgba(0,194,255,0.5);text-align:center;min-height:18px;
+  }
+
+  /* TIMER BAR */
+  #timerWrap{width:100%;height:4px;background:rgba(0,194,255,0.08);border-radius:2px;overflow:hidden;}
+  #timerBar{height:100%;background:var(--cyan);border-radius:2px;transition:width 0.1s linear;width:100%;}
+
+  /* LEVEL COMPLETE / FAIL */
+  #overlay{
+    display:none;position:fixed;inset:0;
+    background:rgba(3,3,4,0.93);
+    flex-direction:column;align-items:center;justify-content:center;
+    gap:16px;z-index:50;
+  }
+  #overlay.show{display:flex;}
+  .ov-title{font:900 36px 'Orbitron',monospace;letter-spacing:6px;}
+  .ov-sub{font:700 11px 'Orbitron',monospace;letter-spacing:4px;color:rgba(255,255,255,0.3);}
+  .ov-score{font:700 24px 'Orbitron',monospace;}
+  .ov-btn{
+    margin-top:8px;padding:10px 28px;
+    font:700 11px 'Orbitron',monospace;letter-spacing:3px;
+    background:transparent;border:1px solid var(--cyan);color:var(--cyan);
+    cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+    transition:all 0.2s;
+  }
+  .ov-btn:hover{background:rgba(0,194,255,0.1);}
+
+  /* WATCHING MODE */
+  #watchLabel{
+    font:900 22px 'Orbitron',monospace;
+    letter-spacing:6px;color:var(--warn);
+    text-shadow:0 0 20px var(--warn);
+    animation:watchPulse 0.8s ease-in-out infinite alternate;
+    min-height:36px;text-align:center;
+  }
+  @keyframes watchPulse{from{opacity:0.6}to{opacity:1}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div>
+      <div class="hdr-title">CIRCUIT SYNC</div>
+      <div class="hdr-sub">SIGNAL PATTERN // CALIBRATION</div>
+    </div>
+    <div style="text-align:right">
+      <div class="hdr-sub">SCORE</div>
+      <div class="hdr-score" id="scoreDisplay">0000</div>
+    </div>
+  </div>
+
+  <div id="statusBar">
+    <div>
+      <div class="hdr-sub">PHASE</div>
+      <div id="phaseVal" style="font:700 12px Orbitron,monospace;color:var(--cyan)">1</div>
+    </div>
+    <div id="livesRow">
+      <div class="hdr-sub">HULL &nbsp;</div>
+      <div class="life-pip full" id="lp0"></div>
+      <div class="life-pip full" id="lp1"></div>
+      <div class="life-pip full" id="lp2"></div>
+    </div>
+  </div>
+
+  <div id="arena">
+    <!-- WATCH phase: nodes light up in sequence -->
+    <div id="watchLabel"></div>
+
+    <!-- Pattern nodes (displayed sequence) -->
+    <div id="patternDisplay"></div>
+
+    <!-- Timeline dots -->
+    <div id="timeline"></div>
+
+    <!-- Phase message -->
+    <div id="phaseMsg">INITIALISING...</div>
+
+    <!-- Timer bar -->
+    <div id="timerWrap"><div id="timerBar"></div></div>
+
+    <!-- Input grid -->
+    <div id="seqGrid"></div>
+  </div>
+</div>
+
+<!-- Overlay -->
+<div id="overlay">
+  <div class="ov-sub" id="ovSub">PHASE COMPLETE</div>
+  <div class="ov-title" id="ovTitle" style="color:var(--cyan)">SYNCED</div>
+  <div class="ov-sub" id="ovDetail"></div>
+  <div class="ov-score" id="ovScore" style="color:var(--cyan)"></div>
+  <button class="ov-btn" id="ovBtn" onclick="continueGame()">CONTINUE ▶</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CIRCUIT SYNC — Simon-style pattern memory game
+//  with escalating complexity, 9-node grid, timed input,
+//  and signal/circuit theming.
+// ═══════════════════════════════════════════════════════════
+
+// ─── CONFIG ───────────────────────────────────────────────
+const MAX_LIVES = 3;
+const GRID_SIZE = 9;  // 3x3
+
+// Node symbols — circuit-themed glyphs
+const NODE_SYMBOLS = ['◈','⬡','◇','△','⬢','◉','⊞','◬','⊕'];
+const NODE_COLORS = [
+  '#00C2FF','#F000B8','#22c55e','#FFB800','#ff6633',
+  '#aa44ff','#00ffcc','#ff4488','#88ffaa'
+];
+
+// Difficulty per phase
+function phaseConfig(phase) {
+  return {
+    seqLen: 3 + Math.floor(phase * 1.2),
+    showTime: Math.max(300, 800 - phase * 60),   // ms per node in show sequence
+    inputTime: Math.max(8, 20 - phase * 1.2),    // seconds to input
+    scramble: phase > 3,  // scramble grid positions each phase
+  };
+}
+
+// ─── STATE ────────────────────────────────────────────────
+let score = 0;
+let lives = MAX_LIVES;
+let phase = 1;
+let totalPhases = 12;
+
+let sequence = [];        // the correct sequence (node indices 0-8)
+let playerSeq = [];       // what player has entered so far
+let gameMode = 'idle';    // idle | watching | inputting | result
+let watchIdx = 0;
+let watchTimer = null;
+let inputTimer = null;
+let timeLeft = 0;
+let nodeMap = [];         // nodeMap[gridIdx] = nodeSymbolIdx (for scrambling)
+
+// ─── DOM REFS ─────────────────────────────────────────────
+const seqGrid = document.getElementById('seqGrid');
+const timeline = document.getElementById('timeline');
+const phaseMsg = document.getElementById('phaseMsg');
+const timerBar = document.getElementById('timerBar');
+const watchLabel = document.getElementById('watchLabel');
+const scoreDisplay = document.getElementById('scoreDisplay');
+const overlay = document.getElementById('overlay');
+
+// ─── BUILD GRID ───────────────────────────────────────────
+function buildGrid() {
+  seqGrid.innerHTML = '';
+  nodeMap = Array.from({ length: GRID_SIZE }, (_, i) => i);
+
+  if (phaseConfig(phase).scramble) {
+    // Shuffle nodeMap
+    for (let i = nodeMap.length - 1; i > 0; i--) {
+      let j = Math.floor(Math.random() * (i + 1));
+      [nodeMap[i], nodeMap[j]] = [nodeMap[j], nodeMap[i]];
+    }
+  }
+
+  for (let i = 0; i < GRID_SIZE; i++) {
+    let sym = NODE_SYMBOLS[nodeMap[i]];
+    let col = NODE_COLORS[nodeMap[i]];
+    let btn = document.createElement('div');
+    btn.className = 'seq-node';
+    btn.innerHTML = sym;
+    btn.style.setProperty('--nodeCol', col);
+    btn.dataset.grid = i;
+    btn.dataset.node = nodeMap[i];
+    btn.addEventListener('click', () => playerInput(i));
+    btn.addEventListener('touchstart', e => { e.preventDefault(); playerInput(i); }, { passive: false });
+    seqGrid.appendChild(btn);
+  }
+}
+
+// ─── TIMELINE ─────────────────────────────────────────────
+function buildTimeline(len) {
+  timeline.innerHTML = '';
+  for (let i = 0; i < len; i++) {
+    let d = document.createElement('div');
+    d.className = 'tl-dot';
+    d.id = `tl${i}`;
+    timeline.appendChild(d);
+  }
+}
+
+function updateTimeline() {
+  for (let i = 0; i < sequence.length; i++) {
+    let d = document.getElementById(`tl${i}`);
+    if (!d) continue;
+    if (i < playerSeq.length) d.className = 'tl-dot done';
+    else if (i === playerSeq.length) d.className = 'tl-dot current';
+    else d.className = 'tl-dot';
+  }
+}
+
+// ─── LIVES ────────────────────────────────────────────────
+function updateLives() {
+  for (let i = 0; i < MAX_LIVES; i++) {
+    let pip = document.getElementById(`lp${i}`);
+    if (pip) pip.className = 'life-pip' + (i < lives ? ' full' : '');
+  }
+}
+
+// ─── SCORE ────────────────────────────────────────────────
+function addScore(pts) {
+  score += pts;
+  scoreDisplay.textContent = score.toString().padStart(4, '0');
+}
+
+// ─── NODE FLASH ───────────────────────────────────────────
+function flashNode(nodeIdx, duration = 400, isCorrect = null) {
+  // Find grid button for this node
+  let btn = seqGrid.querySelector(`[data-node="${nodeIdx}"]`);
+  if (!btn) return;
+  let col = NODE_COLORS[nodeIdx];
+  btn.style.setProperty('--nodeCol', col);
+
+  if (isCorrect === true) {
+    btn.classList.add('correct');
+    setTimeout(() => btn.classList.remove('correct'), duration);
+  } else if (isCorrect === false) {
+    btn.classList.add('wrong');
+    setTimeout(() => btn.classList.remove('wrong'), duration);
+  } else {
+    btn.classList.add('lit');
+    setTimeout(() => btn.classList.remove('lit'), duration);
+  }
+}
+
+// ─── GENERATE SEQUENCE ────────────────────────────────────
+function genSequence(len) {
+  let seq = [];
+  let last = -1;
+  for (let i = 0; i < len; i++) {
+    let n;
+    do { n = Math.floor(Math.random() * GRID_SIZE); } while (n === last);
+    seq.push(n);
+    last = n;
+  }
+  return seq;
+}
+
+// ─── WATCHING PHASE ───────────────────────────────────────
+function startWatch() {
+  gameMode = 'watching';
+  watchIdx = 0;
+  playerSeq = [];
+  clearTimers();
+  setInputEnabled(false);
+  watchLabel.textContent = '▶ WATCH THE SEQUENCE';
+  phaseMsg.textContent = '';
+  timerBar.style.width = '100%';
+
+  let cfg = phaseConfig(phase);
+  function showNext() {
+    if (watchIdx >= sequence.length) {
+      // Done watching — start input phase
+      watchLabel.textContent = '';
+      setTimeout(startInput, 400);
+      return;
+    }
+    let nodeIdx = sequence[watchIdx];
+    flashNode(nodeIdx, cfg.showTime * 0.8);
+    // Highlight timeline dot
+    let tldot = document.getElementById(`tl${watchIdx}`);
+    if (tldot) { tldot.className = 'tl-dot current'; }
+    watchIdx++;
+    watchTimer = setTimeout(showNext, cfg.showTime);
+  }
+  // Small delay before starting
+  watchTimer = setTimeout(showNext, 600);
+}
+
+// ─── INPUT PHASE ──────────────────────────────────────────
+function startInput() {
+  gameMode = 'inputting';
+  setInputEnabled(true);
+  updateTimeline();
+  watchLabel.textContent = '';
+
+  let cfg = phaseConfig(phase);
+  timeLeft = cfg.inputTime;
+  phaseMsg.textContent = 'REPLICATE THE SEQUENCE';
+
+  // Countdown timer
+  function tick() {
+    timeLeft -= 0.1;
+    let pct = (timeLeft / cfg.inputTime) * 100;
+    timerBar.style.width = pct + '%';
+    timerBar.style.background = pct > 50 ? 'var(--cyan)' : pct > 25 ? 'var(--warn)' : 'var(--red)';
+    if (timeLeft <= 0) {
+      // Time out — count as wrong
+      inputFail('SIGNAL TIMEOUT');
+      return;
+    }
+    inputTimer = setTimeout(tick, 100);
+  }
+  inputTimer = setTimeout(tick, 100);
+}
+
+// ─── PLAYER INPUT ─────────────────────────────────────────
+function playerInput(gridIdx) {
+  if (gameMode !== 'inputting') return;
+  let nodeIdx = parseInt(seqGrid.querySelector(`[data-grid="${gridIdx}"]`).dataset.node);
+  let expected = sequence[playerSeq.length];
+
+  if (nodeIdx === expected) {
+    // Correct
+    flashNode(nodeIdx, 300, true);
+    playerSeq.push(nodeIdx);
+    updateTimeline();
+
+    if (playerSeq.length === sequence.length) {
+      // Full sequence complete!
+      clearTimers();
+      setInputEnabled(false);
+      inputSuccess();
+    }
+  } else {
+    // Wrong
+    flashNode(nodeIdx, 400, false);
+    clearTimers();
+    setInputEnabled(false);
+    inputFail('WRONG NODE');
+  }
+}
+
+// ─── SUCCESS ──────────────────────────────────────────────
+function inputSuccess() {
+  gameMode = 'result';
+  phaseMsg.textContent = 'SEQUENCE SYNCED';
+  timerBar.style.width = '100%';
+
+  // Score: base + time bonus + phase multiplier
+  let cfg = phaseConfig(phase);
+  let timeBonus = Math.round(timeLeft * 50);
+  let phaseBonus = phase * 100;
+  let pts = 500 + timeBonus + phaseBonus;
+  addScore(pts);
+
+  setTimeout(() => {
+    if (phase >= totalPhases) {
+      // Won!
+      showOverlay('SIGNAL LOCKED', 'FULL SYNC ACHIEVED', `+${pts} pts · TOTAL: ${score}`, true, 'RESET CALIBRATION');
+    } else {
+      showOverlay('PHASE CLEAR', `PHASE ${phase} COMPLETE`, `+${pts} SIGNAL POINTS`, true, `PHASE ${phase + 1} ▶`);
+    }
+  }, 500);
+}
+
+// ─── FAIL ─────────────────────────────────────────────────
+function inputFail(reason) {
+  gameMode = 'result';
+  lives--;
+  updateLives();
+  phaseMsg.textContent = reason;
+  timerBar.style.width = '0%';
+
+  // Flash all wrong
+  sequence.forEach((n, i) => {
+    if (i >= playerSeq.length) setTimeout(() => flashNode(n, 400), (i - playerSeq.length) * 100);
+  });
+
+  setTimeout(() => {
+    if (lives <= 0) {
+      showOverlay('SIGNAL LOST', 'CALIBRATION FAILED', `PHASE ${phase} · SCORE: ${score}`, false, 'RETRY CALIBRATION');
+    } else {
+      showOverlay('HULL BREACH', reason, `${lives} SIGNAL${lives === 1 ? '' : 'S'} REMAINING`, false, 'RETRY PHASE');
+    }
+  }, 800);
+}
+
+// ─── OVERLAY ──────────────────────────────────────────────
+function showOverlay(title, sub, detail, success, btnLabel) {
+  document.getElementById('ovTitle').textContent = title;
+  document.getElementById('ovTitle').style.color = success ? 'var(--cyan)' : 'var(--red)';
+  document.getElementById('ovSub').textContent = sub;
+  document.getElementById('ovDetail').textContent = detail;
+  document.getElementById('ovScore').textContent = `SCORE: ${score.toString().padStart(6, '0')}`;
+  document.getElementById('ovBtn').textContent = btnLabel;
+  document.getElementById('ovBtn').dataset.mode = success ? 'next' : (lives <= 0 ? 'reset' : 'retry');
+  overlay.classList.add('show');
+}
+
+function continueGame() {
+  overlay.classList.remove('show');
+  let mode = document.getElementById('ovBtn').dataset.mode;
+
+  if (mode === 'next') {
+    if (phase >= totalPhases) {
+      resetGame();
+    } else {
+      phase++;
+      nextPhase();
+    }
+  } else if (mode === 'retry') {
+    // Retry same phase, same sequence
+    buildGrid();
+    buildTimeline(sequence.length);
+    setTimeout(startWatch, 300);
+  } else {
+    resetGame();
+  }
+}
+
+// ─── PHASE SETUP ──────────────────────────────────────────
+function nextPhase() {
+  let cfg = phaseConfig(phase);
+  sequence = genSequence(cfg.seqLen);
+  document.getElementById('phaseVal').textContent = phase;
+  buildGrid();
+  buildTimeline(sequence.length);
+  phaseMsg.textContent = `PHASE ${phase} · ${cfg.seqLen} NODE SEQUENCE`;
+  watchLabel.textContent = '';
+  timerBar.style.width = '100%';
+
+  setTimeout(startWatch, 800);
+}
+
+function resetGame() {
+  score = 0;lives = MAX_LIVES;phase = 1;
+  scoreDisplay.textContent = '0000';
+  updateLives();
+  nextPhase();
+}
+
+// ─── UTILS ────────────────────────────────────────────────
+function clearTimers() {
+  clearTimeout(watchTimer);
+  clearTimeout(inputTimer);
+}
+
+function setInputEnabled(en) {
+  let btns = seqGrid.querySelectorAll('.seq-node');
+  btns.forEach(b => {
+    b.style.pointerEvents = en ? 'all' : 'none';
+    b.style.opacity = en ? '1' : '0.5';
+  });
+}
+
+// ─── BOOT ─────────────────────────────────────────────────
+resetGame();
+</script>
+</body>
+</html>
