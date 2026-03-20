@@ -736,7 +736,7 @@ function AppContent({ appId }: { appId: string }) {
               background: '#0A0B0D',
               borderRadius: '0 0 4px 4px',
             }}
-            sandbox="allow-scripts allow-same-origin allow-popups"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-pointer-lock"
           />
         </div>
       );
