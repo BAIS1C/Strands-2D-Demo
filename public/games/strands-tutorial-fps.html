@@ -832,7 +832,7 @@
         document.getElementById('quit-btn').addEventListener('click', quitGame);
 
         document.addEventListener('keydown', e => {
-            if (e.code === 'Escape') { e.preventDefault(); if (isPaused) resumeGame(); else pauseGame(); return; }
+            if (e.code === 'Escape' && state.isPlaying) { e.preventDefault(); if (isPaused) resumeGame(); else pauseGame(); return; }
             if (!state.isPlaying || isPaused) return;
             switch(e.code) {
                 case 'KeyW': moveF=true; break; case 'KeyS': moveB=true; break;
@@ -862,9 +862,21 @@
         /* ── START ── */
         document.getElementById('start-screen').addEventListener('click', () => {
             initAudio(); document.getElementById('start-screen').style.display='none';
-            renderer.domElement.requestPointerLock();
-            state.isPlaying = true; spawnTargets(); spawnLoot();
+            state.isPlaying = true; isPaused = false; spawnTargets(); spawnLoot();
             showTutorial(tutorialSteps[0].text, tutorialSteps[0].sub); updateHUD();
+            try { renderer.domElement.requestPointerLock(); } catch(e) { /* iframe may block */ }
+        });
+        /* Re-lock pointer when clicking the canvas (after losing lock) */
+        renderer.domElement.addEventListener('click', () => {
+            if (state.isPlaying && !isPaused && document.pointerLockElement !== renderer.domElement) {
+                try { renderer.domElement.requestPointerLock(); } catch(e) {}
+            }
+        });
+        /* Auto-pause when pointer lock is lost (e.g. user presses Escape in browser) */
+        document.addEventListener('pointerlockchange', () => {
+            if (state.isPlaying && !isPaused && document.pointerLockElement !== renderer.domElement) {
+                pauseGame();
+            }
         });
         window.addEventListener('resize', () => { camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
 
