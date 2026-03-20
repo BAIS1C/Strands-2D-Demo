@@ -592,7 +592,7 @@ function AppContent({ appId }: { appId: string }) {
         <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
           <div className={styles.appHeader} style={{ padding: '8px 12px' }}>THE CODEX</div>
           <iframe
-            src="https://strandsnation.xyz/codex?embed=true"
+            src="/codex"
             title="The Codex — StrandsNation"
             style={{
               flex: 1,

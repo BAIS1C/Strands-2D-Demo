@@ -1,0 +1,25 @@
+.codexLayout {
+  display: flex;
+  /* No margin-top — demo site has no nav bar */
+}
+
+.content {
+  flex: 1;
+  padding: 40px;
+  animation: fadeIn 0.3s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .codexLayout {
+    flex-direction: column;
+  }
+
+  .content {
+    padding: 24px var(--space-page-x);
+  }
+}

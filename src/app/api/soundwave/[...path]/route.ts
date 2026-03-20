@@ -74,10 +74,16 @@ async function proxyRequest(req: NextRequest, { params }: { params: Promise<{ pa
   const searchParams = req.nextUrl.searchParams;
   searchParams.forEach((value, key) => url.searchParams.set(key, value));
 
-  // Build headers
+  // Build headers — use API_KEY if set, otherwise forward the client's token
   const headers: HeadersInit = {};
   if (API_KEY) {
     headers['Authorization'] = `Bearer ${API_KEY}`;
+  } else {
+    // Forward client auth token so server-side auth works
+    const clientAuth = req.headers.get('authorization');
+    if (clientAuth) {
+      headers['Authorization'] = clientAuth;
+    }
   }
   const contentType = req.headers.get('content-type');
   if (contentType) {
