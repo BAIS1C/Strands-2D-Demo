@@ -1,0 +1,194 @@
+/* ═══════════════════════════════════════════
+   SIGNAL SYNC — Stabilisation Game CSS
+   Canon: CANON_Signal_Sync.md V1.0
+   "When the video distorts, the UI distorts."
+   ═══════════════════════════════════════════ */
+
+.container {
+  display: flex; flex-direction: column;
+  background: #030304;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+  flex: 1;
+  user-select: none;
+  cursor: none;
+  position: relative;
+}
+
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(10,11,13,0.95);
+  border-bottom: 1px solid var(--c-border);
+  font: 500 11px var(--font-display);
+  letter-spacing: 0.5px;
+}
+
+.label { color: var(--c-dim); }
+
+.status {
+  font: 700 10px var(--font-display);
+  letter-spacing: 1.5px;
+  transition: color 0.2s;
+}
+.statusSync { color: var(--c-accent); }
+.statusDrift { color: var(--c-pink); }
+
+/* ═══ VIDEO FIELD (clarity / static) ═══ */
+.videoField {
+  flex: 1; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 200px;
+  background: #030304;
+  overflow: hidden;
+}
+
+.staticNoise {
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255,255,255,0.015) 2px,
+      rgba(255,255,255,0.015) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 3px,
+      rgba(0,194,255,0.008) 3px,
+      rgba(0,194,255,0.008) 6px
+    );
+  animation: staticFlicker 0.15s infinite steps(3);
+  pointer-events: none;
+  z-index: 2;
+}
+
+@keyframes staticFlicker {
+  0% { transform: translateY(0) translateX(0); }
+  33% { transform: translateY(-1px) translateX(1px); }
+  66% { transform: translateY(1px) translateX(-1px); }
+  100% { transform: translateY(0) translateX(0); }
+}
+
+.clarityField {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 50%, rgba(0,194,255,0.03) 0%, transparent 70%);
+  z-index: 1;
+  transition: opacity 0.3s;
+}
+
+.clarityText {
+  font: 500 13px var(--font-display);
+  color: var(--c-accent);
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.clarityPulse {
+  animation: clarityPulse 1.5s ease infinite;
+}
+
+@keyframes clarityPulse {
+  0%, 100% { opacity: 1; text-shadow: 0 0 12px rgba(0,194,255,0.4); }
+  50% { opacity: 0.7; text-shadow: 0 0 20px rgba(0,194,255,0.8); }
+}
+
+.scanlines {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0,0,0,0.15) 2px,
+    rgba(0,0,0,0.15) 4px
+  );
+  pointer-events: none;
+  z-index: 3;
+  transition: opacity 0.5s;
+}
+
+/* ═══ SYNC BAR ═══ */
+.syncBar {
+  width: 100%;
+  height: 48px;
+  display: block;
+  border-top: 1px solid var(--c-border);
+  cursor: crosshair;
+}
+
+/* ═══ FOOTER ═══ */
+.footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(10,11,13,0.95);
+  border-top: 1px solid var(--c-border);
+  font: 400 11px var(--font-display);
+  color: var(--c-dim);
+  letter-spacing: 0.5px;
+}
+
+.progressWrap {
+  display: flex; align-items: center; gap: 10px; flex: 1;
+}
+
+.progressBar {
+  flex: 1; height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  max-width: 200px;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--c-accent);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.progressLabel { color: var(--c-accent); min-width: 40px; }
+.timer { color: var(--c-dim); }
+
+/* ═══ OVERLAYS ═══ */
+.completeOverlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(3,3,4,0.7);
+  z-index: 10;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.completeText {
+  font: 700 18px var(--font-display);
+  color: var(--c-green);
+  letter-spacing: 4px;
+  text-shadow: 0 0 20px rgba(34,197,94,0.5);
+  animation: completeGlow 1.5s ease infinite;
+}
+
+@keyframes completeGlow {
+  0%, 100% { text-shadow: 0 0 20px rgba(34,197,94,0.5); }
+  50% { text-shadow: 0 0 40px rgba(34,197,94,0.8); }
+}
+
+.instruction {
+  position: absolute;
+  bottom: 64px; left: 50%;
+  transform: translateX(-50%);
+  font: 400 12px var(--font-display);
+  color: var(--c-sub);
+  letter-spacing: 0.5px;
+  text-align: center;
+  z-index: 5;
+  animation: fadeIn 1s ease;
+  padding: 8px 16px;
+  background: rgba(10,11,13,0.8);
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  white-space: nowrap;
+}

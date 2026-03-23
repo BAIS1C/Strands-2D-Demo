@@ -169,6 +169,8 @@
   position: relative;
   z-index: 1;
   overflow: hidden;
+  /* Reserve space for the fixed taskbar so windows don't render under it */
+  padding-bottom: 48px;
 }
 
 /* ─── ICON GRID — Windows-style column-first auto-arrange ─── */
@@ -458,6 +460,8 @@
   flex: 1;
   overflow: auto;
   position: relative;
+  /* Prevent scroll chaining — content scrolls stay inside the window */
+  overscroll-behavior: contain;
 }
 
 /* ─── RESIZE HANDLES ─── */
@@ -505,7 +509,10 @@
    ═══════════════════════════════════════════════════════════════ */
 
 .taskbar {
-  position: relative;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 9000;
   height: 48px;
   display: flex;

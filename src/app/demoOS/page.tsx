@@ -3,6 +3,12 @@
 import { useState, useCallback, useRef, useEffect, createContext, useContext, useMemo } from 'react';
 import styles from './page.module.css';
 import { playlist as generatedPlaylist } from '@/constants/playlist';
+import QuestChat from '@/components/QuestChat/QuestChat';
+import type { QuestCallbacks, AssessmentProfile } from '@/components/QuestChat/QuestChat';
+import DesktopContextMenu from '@/components/DesktopContextMenu/DesktopContextMenu';
+import SignalSync from '@/components/SignalSync/SignalSync';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 /* ═══════════════════════════════════════════════════════════════
    AUDIO TYPES — normalise the auto-generated playlist
@@ -70,6 +76,34 @@ const EvolutionContext = createContext<EvolutionState>({
 });
 
 /* ═══════════════════════════════════════════════════════════════
+   QUEST CONTEXT — Shared between DemoOS and QuestChat
+   Allows AppContent to access quest callbacks and triggers
+   without prop drilling through Window components.
+   ═══════════════════════════════════════════════════════════════ */
+
+interface QuestState {
+  callbacks: QuestCallbacks;
+  externalTrigger: string;
+  questPhase: string;
+  desktopFiles: { name: string; icon: string; renamed?: boolean }[];
+}
+
+const QuestContext = createContext<QuestState | null>(null);
+
+/* ═══════════════════════════════════════════════════════════════
+   AVATAR CONTEXT — Avaturn avatar creator integration
+   ═══════════════════════════════════════════════════════════════ */
+
+interface AvatarState {
+  glbUrl: string | null;
+  mode: 'create' | 'preview';
+  setMode: (m: 'create' | 'preview') => void;
+  onAvatarExported: (url: string) => void;
+}
+
+const AvatarContext = createContext<AvatarState | null>(null);
+
+/* ═══════════════════════════════════════════════════════════════
    APP REGISTRY — Your Desktop in 2026
    Standard OS apps + installed Strands software
 
@@ -92,12 +126,15 @@ const APP_REGISTRY: AppManifest[] = [
 
   // ── Strands installed apps — available ──
   { id: 'signal-reg',    label: 'Signal Reg',           icon: '📡', minWidth: 320, minHeight: 400, defaultWidth: 380, defaultHeight: 460, state: 'available' },
-  { id: 'messages',      label: 'Messages',             icon: '💬', minWidth: 360, minHeight: 480, defaultWidth: 420, defaultHeight: 540, state: 'available', hasNotification: true },
+  { id: 'messages',      label: 'Messages',             icon: '💬', minWidth: 400, minHeight: 500, defaultWidth: 500, defaultHeight: 700, state: 'available', hasNotification: true },
   { id: 'bridge-app',    label: 'CPU-VPU Bridge',       icon: '🌉', minWidth: 400, minHeight: 480, defaultWidth: 440, defaultHeight: 520, state: 'available' },
   { id: 'codex',         label: 'The Codex',            icon: '📖', minWidth: 400, minHeight: 500, defaultWidth: 500, defaultHeight: 600, state: 'available' },
   { id: 'signal-monitor',label: 'Signal Monitor',       icon: '📺', minWidth: 440, minHeight: 500, defaultWidth: 480, defaultHeight: 540, state: 'available' },
   { id: 'mymories',      label: 'Mymories',             icon: '🧠', minWidth: 360, minHeight: 440, defaultWidth: 400, defaultHeight: 480, state: 'available' },
   { id: 'myconsent',     label: 'MyConsent',             icon: '🛡️', minWidth: 400, minHeight: 400, defaultWidth: 460, defaultHeight: 480, state: 'available' },
+
+  // ── Avatar Creator — Avaturn integration ──
+  { id: 'avatar-creator', label: 'Avatar Creator', icon: '🧬', minWidth: 520, minHeight: 600, defaultWidth: 680, defaultHeight: 720, state: 'available' },
 
   // ── Sync-gated — show progress bar until threshold ──
   { id: 'signal-training', label: 'Signal Training',    icon: '🎯', minWidth: 640, minHeight: 480, defaultWidth: 800, defaultHeight: 600, state: 'available' },
@@ -410,6 +447,377 @@ function SoundWaveLauncher() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   AVATURN CREATOR — Iframe embed for avatar creation
+   Uses Avaturn's web SDK. Player creates avatar, we get GLB URL.
+
+   SETUP REQUIRED: Register at developer.avaturn.me to get your
+   subdomain. Replace AVATURN_SUBDOMAIN below with your actual
+   subdomain (e.g., "strands" → "strands.avaturn.dev").
+   For demo, we show a branded placeholder until the subdomain
+   is configured.
+   ═══════════════════════════════════════════════════════════════ */
+
+const AVATURN_SUBDOMAIN = 'strands';
+
+function AvaturnCreator({ onExport }: { onExport: (url: string) => void }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  // Listen for Avaturn export messages
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      // Avaturn SDK sends export events via postMessage
+      if (e.data?.source === 'avaturn' && e.data?.eventName === 'v2.avatar.exported') {
+        const url = e.data?.data?.url || e.data?.data?.avatarUrl;
+        if (url) {
+          onExport(url);
+        }
+      }
+      // Also handle the older SDK format
+      if (e.data?.type === 'avaturn_avatar_exported' && e.data?.url) {
+        onExport(e.data.url);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [onExport]);
+
+  const avaturnUrl = `https://${AVATURN_SUBDOMAIN}.avaturn.dev`;
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      {/* Loading overlay */}
+      {!loaded && !error && (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: '12px',
+          background: 'rgba(3,3,4,0.98)', zIndex: 2,
+        }}>
+          <div style={{
+            width: '24px', height: '24px', border: '2px solid rgba(0,194,255,0.2)',
+            borderTopColor: '#00C2FF', borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+          }} />
+          <span style={{
+            font: '500 11px var(--font-display, Orbitron, monospace)',
+            color: 'var(--c-accent, #00C2FF)', letterSpacing: '1px',
+          }}>LOADING AVATAR CREATOR...</span>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && (
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '24px',
+        }}>
+          <span style={{ fontSize: '36px' }}>🧬</span>
+          <span style={{
+            font: '600 13px var(--font-display, Orbitron, monospace)',
+            color: 'var(--c-accent, #00C2FF)', letterSpacing: '1px', textAlign: 'center',
+          }}>AVATAR CREATOR</span>
+          <span style={{
+            font: '400 12px var(--font-body, Rajdhani, sans-serif)',
+            color: 'var(--c-sub, #A0AEC0)', textAlign: 'center', maxWidth: '320px', lineHeight: '1.6',
+          }}>
+            Create your 3D avatar from a selfie or from scratch.
+            Your avatar persists across the Strands metaverse — every game, every world, every interaction.
+          </span>
+          <div style={{
+            padding: '12px 20px', background: 'rgba(0,194,255,0.06)',
+            border: '1px solid rgba(0,194,255,0.12)', borderRadius: '8px',
+            maxWidth: '300px', textAlign: 'center',
+          }}>
+            <span style={{
+              font: '400 11px var(--font-body, Rajdhani, sans-serif)',
+              color: 'var(--c-dim, #4A5568)', lineHeight: '1.5',
+            }}>
+              Avaturn integration requires a developer subdomain.
+              Register at <span style={{ color: '#00C2FF' }}>developer.avaturn.me</span> and
+              update AVATURN_SUBDOMAIN in the code.
+            </span>
+          </div>
+          <button
+            onClick={() => { setError(false); setLoaded(false); }}
+            style={{
+              padding: '8px 20px', background: 'rgba(0,194,255,0.1)',
+              border: '1px solid var(--c-accent, #00C2FF)', borderRadius: '6px',
+              font: '700 10px var(--font-display, Orbitron, monospace)',
+              color: '#00C2FF', letterSpacing: '1px', cursor: 'pointer',
+              marginTop: '8px',
+            }}
+          >RETRY</button>
+        </div>
+      )}
+
+      {/* Avaturn iframe */}
+      <iframe
+        ref={iframeRef}
+        src={avaturnUrl}
+        title="Avaturn Avatar Creator"
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+        allow="camera; microphone"
+        style={{
+          flex: 1, width: '100%', border: 'none',
+          background: '#0A0B0D',
+          display: error ? 'none' : 'block',
+        }}
+      />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AVATAR PREVIEW — Three.js inline renderer for the exported GLB
+   Shows a rotating view of the player's avatar with orbit controls.
+   ═══════════════════════════════════════════════════════════════ */
+
+function AvatarPreview({ glbUrl }: { glbUrl: string }) {
+  const mountRef = useRef<HTMLDivElement>(null);
+  const rendererRef = useRef<{ cleanup: () => void } | null>(null);
+
+  useEffect(() => {
+    if (!mountRef.current || !glbUrl) return;
+
+    // Dynamic import pattern — Three.js is already loaded globally
+    // but GLTFLoader needs the module import
+    let cancelled = false;
+
+    const initScene = async () => {
+      if (cancelled || !mountRef.current) return;
+
+      const container = mountRef.current;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+
+      // Scene
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0A0B0D);
+      scene.fog = new THREE.FogExp2(0x0A0B0D, 0.02);
+
+      // Camera
+      const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
+      camera.position.set(0, 1.2, 3);
+      camera.lookAt(0, 0.9, 0);
+
+      // Renderer
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 0.9;
+      renderer.shadowMap.enabled = true;
+      container.appendChild(renderer.domElement);
+
+      // Lights
+      const ambient = new THREE.AmbientLight(0x1a1a2e, 0.6);
+      scene.add(ambient);
+
+      const keyLight = new THREE.DirectionalLight(0x88bbff, 0.8);
+      keyLight.position.set(2, 4, 3);
+      keyLight.castShadow = true;
+      scene.add(keyLight);
+
+      const rimLight = new THREE.PointLight(0x00C2FF, 0.6, 10);
+      rimLight.position.set(-2, 2, -1);
+      scene.add(rimLight);
+
+      const fillLight = new THREE.PointLight(0xF000B8, 0.3, 10);
+      fillLight.position.set(1, 0.5, 2);
+      scene.add(fillLight);
+
+      // Ground disc
+      const groundGeo = new THREE.CircleGeometry(2, 48);
+      const groundMat = new THREE.MeshStandardMaterial({
+        color: 0x0A0B0D, roughness: 0.8, metalness: 0.2,
+      });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      // Ground ring glow
+      const ringGeo = new THREE.RingGeometry(1.8, 2.0, 64);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x00C2FF, transparent: true, opacity: 0.15, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.01;
+      scene.add(ring);
+
+      // Grid helper
+      const grid = new THREE.GridHelper(4, 20, 0x00C2FF, 0x00C2FF);
+      (grid.material as THREE.Material).opacity = 0.06;
+      (grid.material as THREE.Material).transparent = true;
+      scene.add(grid);
+
+      // Load avatar GLB
+      let mixer: THREE.AnimationMixer | null = null;
+      try {
+        const loader = new GLTFLoader();
+        const gltf = await new Promise<{ scene: THREE.Group; animations: THREE.AnimationClip[] }>((resolve, reject) => {
+          loader.load(glbUrl, resolve, undefined, reject);
+        });
+
+        if (cancelled) return;
+
+        const avatar = gltf.scene;
+        avatar.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            (child as THREE.Mesh).castShadow = true;
+            (child as THREE.Mesh).receiveShadow = true;
+          }
+        });
+
+        // Center and scale avatar
+        const box = new THREE.Box3().setFromObject(avatar);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = 1.7 / maxDim; // Normalise to ~1.7m height
+        avatar.scale.setScalar(scale);
+        avatar.position.y = -(center.y * scale - size.y * scale / 2);
+        avatar.position.x = -center.x * scale;
+        avatar.position.z = -center.z * scale;
+
+        scene.add(avatar);
+
+        // Play animations if available
+        if (gltf.animations.length > 0) {
+          mixer = new THREE.AnimationMixer(avatar);
+          const idle = gltf.animations[0];
+          mixer.clipAction(idle).play();
+        }
+      } catch (err) {
+        console.warn('[AvatarPreview] Failed to load GLB:', err);
+        // Show fallback wireframe humanoid
+        const bodyGeo = new THREE.CapsuleGeometry(0.25, 0.8, 8, 16);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x00C2FF, wireframe: true, transparent: true, opacity: 0.4 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.9;
+        scene.add(body);
+
+        const headGeo = new THREE.SphereGeometry(0.18, 12, 12);
+        const head = new THREE.Mesh(headGeo, bodyMat);
+        head.position.y = 1.55;
+        scene.add(head);
+      }
+
+      // Mouse orbit
+      let theta = 0;
+      let phi = Math.PI / 6;
+      let radius = 3;
+      let isDragging = false;
+      let lastX = 0;
+      let lastY = 0;
+
+      const onDown = (e: MouseEvent) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; };
+      const onUp = () => { isDragging = false; };
+      const onMove = (e: MouseEvent) => {
+        if (!isDragging) return;
+        theta -= (e.clientX - lastX) * 0.008;
+        phi = Math.max(0.1, Math.min(Math.PI / 2.2, phi + (e.clientY - lastY) * 0.008));
+        lastX = e.clientX;
+        lastY = e.clientY;
+      };
+      const onWheel = (e: WheelEvent) => {
+        radius = Math.max(1.5, Math.min(6, radius + e.deltaY * 0.003));
+      };
+
+      renderer.domElement.addEventListener('mousedown', onDown);
+      window.addEventListener('mouseup', onUp);
+      renderer.domElement.addEventListener('mousemove', onMove);
+      renderer.domElement.addEventListener('wheel', onWheel, { passive: true });
+
+      // Animation loop
+      const clock = new THREE.Clock();
+      let animId: number;
+
+      const animate = () => {
+        animId = requestAnimationFrame(animate);
+        const dt = clock.getDelta();
+
+        // Auto-rotate slowly when not dragging
+        if (!isDragging) theta += dt * 0.3;
+
+        // Update camera orbit
+        camera.position.x = Math.sin(theta) * Math.cos(phi) * radius;
+        camera.position.y = Math.sin(phi) * radius + 0.5;
+        camera.position.z = Math.cos(theta) * Math.cos(phi) * radius;
+        camera.lookAt(0, 0.9, 0);
+
+        // Animate ring glow
+        ringMat.opacity = 0.1 + Math.sin(Date.now() * 0.002) * 0.05;
+
+        if (mixer) mixer.update(dt);
+        renderer.render(scene, camera);
+      };
+      animate();
+
+      // Resize handler
+      const onResize = () => {
+        if (!container) return;
+        const nw = container.clientWidth;
+        const nh = container.clientHeight;
+        camera.aspect = nw / nh;
+        camera.updateProjectionMatrix();
+        renderer.setSize(nw, nh);
+      };
+      const resizeObs = new ResizeObserver(onResize);
+      resizeObs.observe(container);
+
+      // Store cleanup
+      rendererRef.current = {
+        cleanup: () => {
+          cancelAnimationFrame(animId);
+          resizeObs.disconnect();
+          renderer.domElement.removeEventListener('mousedown', onDown);
+          window.removeEventListener('mouseup', onUp);
+          renderer.domElement.removeEventListener('mousemove', onMove);
+          renderer.domElement.removeEventListener('wheel', onWheel);
+          renderer.dispose();
+          if (container.contains(renderer.domElement)) {
+            container.removeChild(renderer.domElement);
+          }
+        }
+      };
+    };
+
+    initScene();
+
+    return () => {
+      cancelled = true;
+      rendererRef.current?.cleanup();
+      rendererRef.current = null;
+    };
+  }, [glbUrl]);
+
+  return (
+    <div ref={mountRef} style={{
+      flex: 1, width: '100%', cursor: 'grab', position: 'relative', overflow: 'hidden',
+    }}>
+      {/* HUD overlay */}
+      <div style={{
+        position: 'absolute', bottom: '12px', left: '14px', right: '14px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        pointerEvents: 'none',
+      }}>
+        <span style={{
+          font: '400 10px var(--font-display, Orbitron, monospace)',
+          color: 'var(--c-dim, #4A5568)', letterSpacing: '0.5px',
+        }}>DRAG TO ORBIT · SCROLL TO ZOOM</span>
+        <span style={{
+          font: '600 10px var(--font-display, Orbitron, monospace)',
+          color: 'var(--c-accent, #00C2FF)', letterSpacing: '1px',
+        }}>AVATAR LOADED</span>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
    APP CONTENT — What each window shows when opened
    ═══════════════════════════════════════════════════════════════ */
 
@@ -516,6 +924,74 @@ function AppContent({ appId }: { appId: string }) {
     case 'soundwave':
       return <SoundWaveLauncher />;
 
+    case 'avatar-creator': {
+      // eslint-disable-next-line react-hooks/rules-of-hooks, no-case-declarations
+      const avatarCtx = useContext(AvatarContext);
+      if (!avatarCtx) return <div className={styles.appBody}><div className={styles.appHeader}>AVATAR CREATOR</div></div>;
+
+      return (
+        <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Header bar with mode toggle */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '8px 14px',
+            background: 'rgba(10,11,13,0.98)',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            flexShrink: 0,
+          }}>
+            <span style={{
+              font: '600 11px var(--font-display, Orbitron, monospace)',
+              color: 'var(--c-accent, #00C2FF)',
+              letterSpacing: '1px',
+            }}>
+              {avatarCtx.mode === 'create' ? '◈ AVATAR CREATOR' : '◈ AVATAR PREVIEW'}
+            </span>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                onClick={() => avatarCtx.setMode('create')}
+                style={{
+                  padding: '4px 10px', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                  font: '600 9px var(--font-display, Orbitron, monospace)',
+                  letterSpacing: '0.5px',
+                  background: avatarCtx.mode === 'create' ? 'rgba(0,194,255,0.15)' : 'rgba(255,255,255,0.04)',
+                  color: avatarCtx.mode === 'create' ? '#00C2FF' : '#4A5568',
+                }}
+              >CREATE</button>
+              <button
+                onClick={() => avatarCtx.setMode('preview')}
+                style={{
+                  padding: '4px 10px', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                  font: '600 9px var(--font-display, Orbitron, monospace)',
+                  letterSpacing: '0.5px',
+                  background: avatarCtx.mode === 'preview' ? 'rgba(0,194,255,0.15)' : 'rgba(255,255,255,0.04)',
+                  color: avatarCtx.mode === 'preview' ? '#00C2FF' : '#4A5568',
+                  opacity: avatarCtx.glbUrl ? 1 : 0.3,
+                }}
+                disabled={!avatarCtx.glbUrl}
+              >PREVIEW</button>
+            </div>
+          </div>
+
+          {/* Avaturn iframe or 3D preview */}
+          {avatarCtx.mode === 'create' ? (
+            <AvaturnCreator onExport={avatarCtx.onAvatarExported} />
+          ) : avatarCtx.glbUrl ? (
+            <AvatarPreview glbUrl={avatarCtx.glbUrl} />
+          ) : (
+            <div style={{
+              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+              justifyContent: 'center', gap: '12px', color: 'var(--c-dim, #4A5568)',
+            }}>
+              <span style={{ fontSize: '40px' }}>🧬</span>
+              <span style={{ font: '400 12px var(--font-body, Rajdhani, sans-serif)' }}>
+                No avatar created yet. Switch to CREATE mode.
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     case 'signal-reg':
       return (
         <div className={styles.appBody}>
@@ -536,33 +1012,21 @@ function AppContent({ appId }: { appId: string }) {
         </div>
       );
 
-    case 'messages':
+    case 'messages': {
+      // Quest narrative lives here — QuestChat drives the entire onboarding
+      // eslint-disable-next-line react-hooks/rules-of-hooks, no-case-declarations
+      const quest = useContext(QuestContext);
+      if (!quest) return <div className={styles.appBody}><div className={styles.appHeader}>MESSAGES</div></div>;
       return (
-        <div className={styles.appBody}>
-          <div className={styles.appHeader}>MESSAGES</div>
-          <div className={styles.chatWindow}>
-            <div className={styles.chatMsg}>
-              <span className={styles.chatSender}>ghost93</span>
-              <span className={styles.chatText}>you&apos;re not supposed to be here yet.</span>
-            </div>
-            <div className={styles.chatMsg}>
-              <span className={styles.chatSender}>crashweaver</span>
-              <span className={styles.chatText}>Ignore ghost. Signal&apos;s clean. You&apos;re building substrate — that&apos;s what matters.</span>
-            </div>
-            <div className={styles.chatMsg}>
-              <span className={styles.chatSender}>kira</span>
-              <span className={styles.chatText}>Check your Bridge App. Something moved.</span>
-            </div>
-            <div className={`${styles.chatMsg} ${styles.chatMsgSystem}`}>
-              <span className={styles.chatText}>/// SIGNAL ANOMALY DETECTED — SOURCE UNATTRIBUTED ///</span>
-            </div>
-            <div className={styles.chatMsg}>
-              <span className={styles.chatSender}>???</span>
-              <span className={styles.chatText}>y̷o̷u̶ ̷b̸u̴i̴l̵t̶ ̵i̶t̷.̶ ̴I̸ ̸w̴a̵s̸n̸&apos;̷t̵ ̵s̶u̸r̸e̷ ̴y̸o̵u̵ ̸w̸o̷u̸l̶d̷.̷</span>
-            </div>
-          </div>
+        <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
+          <QuestChat
+            callbacks={quest.callbacks}
+            externalTrigger={quest.externalTrigger}
+            onPhaseChange={(p) => { /* phase tracked at DemoOS level */ }}
+          />
         </div>
       );
+    }
 
     case 'bridge-app':
       return (
@@ -697,6 +1161,24 @@ function AppContent({ appId }: { appId: string }) {
         </div>
       );
 
+    case 'circuit-sync-quest':
+      return (
+        <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
+          <iframe
+            src="/games/holo-lock.html"
+            title="Holo-Lock — Circuit Alignment"
+            style={{
+              flex: 1,
+              width: '100%',
+              border: 'none',
+              background: '#030304',
+              borderRadius: '0 0 4px 4px',
+            }}
+            sandbox="allow-scripts allow-same-origin allow-popups"
+          />
+        </div>
+      );
+
     case 'myconsent':
       return (
         <div className={styles.appBody}>
@@ -759,6 +1241,32 @@ function AppContent({ appId }: { appId: string }) {
           />
         </div>
       );
+
+    case 'quest-signal-sync': {
+      // Signal Sync IS the video player. No separate video window.
+      // The oscillating sync bar overlays the video field.
+      // Keeping it balanced = video plays clearly. Lose it = static.
+      // No play button. No timeline. Just the sync mechanic driving clarity.
+      // eslint-disable-next-line react-hooks/rules-of-hooks, no-case-declarations
+      const questCtx = useContext(QuestContext);
+      // Determine round from quest phase
+      const round = questCtx?.questPhase?.includes('3') ? 3 : questCtx?.questPhase?.includes('2') ? 2 : 1;
+      const difficulty = round === 1 ? 0.3 : round === 2 ? 0.55 : 0.8;
+      return (
+        <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
+          <SignalSync
+            difficulty={difficulty}
+            targetHoldTime={round === 1 ? 8 : round === 2 ? 12 : 16}
+            round={round}
+            label={`PROPER GANDER — EP${round}`}
+            onComplete={() => {
+              questCtx?.callbacks.onNotify(`Signal Sync Round ${round} Complete!`);
+            }}
+            onStabilityChange={() => {}}
+          />
+        </div>
+      );
+    }
 
     default:
       return (
@@ -837,11 +1345,13 @@ function Window({ win, isActive, onFocus, onClose, onMinimize, onMaximize, onMov
 
   const handleResizeEnd = useCallback(() => { resizeRef.current = null; }, []);
 
+  // Clamp top so the title bar is ALWAYS visible — never let a window escape above viewport
+  const clampedY = Math.max(0, win.y);
   const windowStyle: React.CSSProperties = win.isMinimized
     ? { display: 'none' }
     : win.isMaximized
     ? { left: 0, top: 0, width: '100%', height: `calc(100vh - ${TASKBAR_H}px)`, zIndex: win.zIndex }
-    : { left: win.x, top: win.y, width: win.width, height: win.height, zIndex: win.zIndex };
+    : { left: win.x, top: clampedY, width: win.width, height: win.height, zIndex: win.zIndex };
 
   const edges = ['n','ne','e','se','s','sw','w','nw'];
 
@@ -1024,6 +1534,9 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
    MAIN DESKTOP OS PAGE
    ═══════════════════════════════════════════════════════════════ */
 
+// Standard OS app IDs for filtering (stable constant)
+const STANDARD_IDS: string[] = ['my-computer','documents','my-pictures','my-videos','music-player'];
+
 export default function DemoOSPage() {
   const [booted, setBooted] = useState(false);
   const [windows, setWindows] = useState<WindowState[]>([]);
@@ -1037,6 +1550,141 @@ export default function DemoOSPage() {
   }, []);
   const [evo, setEvo] = useState<EvolutionState>({ era: '2026', syncValue: 375, bridgeLevel: 3 });
   const windowCounter = useRef(0);
+
+  /* ── Quest State ── */
+  const [questPhase, setQuestPhase] = useState('intro');
+  const [questTrigger, setQuestTrigger] = useState('');
+  const [desktopFiles, setDesktopFiles] = useState<{ name: string; icon: string; renamed?: boolean }[]>([]);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; fileName: string } | null>(null);
+
+  /* ── Avatar State ── */
+  const [avatarGlbUrl, setAvatarGlbUrl] = useState<string | null>(null);
+  const [avatarCreatorMode, setAvatarCreatorMode] = useState<'create' | 'preview'>('create');
+
+  // Spawn a dynamic window (for quest-triggered windows like Signal Sync, Video)
+  const spawnDynamicWindow = useCallback((appId: string, title: string, icon: string, width = 520, height = 500) => {
+    // Check if already open
+    const existing = windows.find(w => w.appId === appId);
+    if (existing) {
+      setNextZ(z => z + 1);
+      setWindows(prev => prev.map(w => w.id === existing.id ? { ...w, zIndex: nextZ + 1, isMinimized: false } : w));
+      setActiveWindowId(existing.id);
+      return;
+    }
+    windowCounter.current++;
+    const id = `win-${windowCounter.current}`;
+    const ox = (windowCounter.current % 6) * 40;
+    const oy = (windowCounter.current % 4) * 40;
+    const newWin: WindowState = {
+      id, appId, title, icon,
+      x: 200 + ox, y: 60 + oy,
+      width, height,
+      minWidth: 400, minHeight: 360,
+      zIndex: nextZ + 1, isMinimized: false, isMaximized: false,
+    };
+    setNextZ(z => z + 1);
+    setWindows(prev => [...prev, newWin]);
+    setActiveWindowId(id);
+  }, [windows, nextZ]);
+
+  // Quest callbacks — these bridge the QuestChat to the DemoOS desktop
+  const questCallbacks = useMemo<QuestCallbacks>(() => ({
+    onFileAppear: (fileName: string) => {
+      // Determine icon based on file type
+      let icon = '📦';
+      if (fileName.includes('gander')) icon = '🎬';
+      else if (fileName.includes('arcade') || fileName.includes('2042') || fileName.endsWith('.exe')) icon = '🕹️';
+      else if (fileName.endsWith('.mp4') || fileName.endsWith('.quantstream')) icon = '🎬';
+      setDesktopFiles(prev => [...prev, { name: fileName, icon }]);
+      showToast(`File appeared: ${fileName}`);
+    },
+    onOpenSignalSync: (round: number) => {
+      // Signal Sync IS the video player — one window, not two.
+      // The sync overlay drives video clarity. No separate video window.
+      spawnDynamicWindow('quest-signal-sync', `Proper Gander — Signal ${round}`, '📺', 580, 520);
+    },
+    onOpenVideo: () => {
+      // No-op: video is already playing through Signal Sync.
+      // The sync mechanic IS the playback interface.
+    },
+    onOpenGame: (gameId: string) => {
+      const gameApp = APP_REGISTRY.find(a => a.id === gameId);
+      if (gameApp) {
+        const existing = windows.find(w => w.appId === gameId);
+        if (existing) {
+          setNextZ(z => z + 1);
+          setWindows(prev => prev.map(w => w.id === existing.id ? { ...w, zIndex: nextZ + 1, isMinimized: false } : w));
+          setActiveWindowId(existing.id);
+        } else {
+          spawnDynamicWindow(gameId, gameApp.label, gameApp.icon, gameApp.defaultWidth, gameApp.defaultHeight);
+        }
+      }
+    },
+    onOpenCircuitSync: () => {
+      spawnDynamicWindow('circuit-sync-quest', 'Circuit Reroute', '🔓', 560, 540);
+    },
+    onQuestComplete: (profile: AssessmentProfile) => {
+      showToast('QUEST COMPLETE — Welcome to Strands, Agent.');
+      console.log('[Quest] Assessment profile:', profile);
+    },
+    onNotify: (msg: string) => {
+      showToast(msg);
+      // Signal Sync IS the video player. Completion = video decoded + watched.
+      // Trigger video-complete directly (skipping the separate video step).
+      if (msg.includes('Signal Sync Round 1')) {
+        setQuestTrigger('sync-complete-1');
+        setTimeout(() => setQuestTrigger('video-complete-1'), 1500);
+      } else if (msg.includes('Signal Sync Round 2')) {
+        setQuestTrigger('sync-complete-2');
+        setTimeout(() => setQuestTrigger('video-complete-2'), 1500);
+      } else if (msg.includes('Signal Sync Round 3')) {
+        setQuestTrigger('sync-complete-3');
+        setTimeout(() => setQuestTrigger('video-complete-3'), 1500);
+      }
+    },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [showToast, spawnDynamicWindow, windows, nextZ]);
+
+  // Quest context value
+  const questContextValue = useMemo<QuestState>(() => ({
+    callbacks: questCallbacks,
+    externalTrigger: questTrigger,
+    questPhase,
+    desktopFiles,
+  }), [questCallbacks, questTrigger, questPhase, desktopFiles]);
+
+  // Avatar context value
+  const avatarContextValue = useMemo<AvatarState>(() => ({
+    glbUrl: avatarGlbUrl,
+    mode: avatarCreatorMode,
+    setMode: setAvatarCreatorMode,
+    onAvatarExported: (url: string) => {
+      setAvatarGlbUrl(url);
+      setAvatarCreatorMode('preview');
+      showToast('AVATAR EXPORTED — Signal identity locked.');
+      console.log('[Avatar] GLB exported:', url);
+    },
+  }), [avatarGlbUrl, avatarCreatorMode, showToast]);
+
+  // Handle rename from context menu
+  const handleFileRename = useCallback((newName: string) => {
+    setDesktopFiles(prev => prev.map(f =>
+      f.name === contextMenu?.fileName ? { ...f, name: newName, renamed: true } : f
+    ));
+    setContextMenu(null);
+    // If renamed to .mp4, trigger quest advancement
+    if (newName.endsWith('.mp4')) {
+      setQuestTrigger('file-renamed');
+      showToast(`File renamed to: ${newName}`);
+    }
+  }, [contextMenu, showToast]);
+
+  // Handle right-click on desktop files
+  const handleFileContextMenu = useCallback((e: React.MouseEvent, fileName: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, fileName });
+  }, []);
 
   const toggleEra = useCallback(() => {
     setEvo(prev => prev.era === '2026'
@@ -1055,11 +1703,26 @@ export default function DemoOSPage() {
     }
     windowCounter.current++;
     const id = `win-${windowCounter.current}`;
-    const ox = (windowCounter.current % 8) * 30;
-    const oy = (windowCounter.current % 6) * 30;
+
+    // Calculate position - center for Messages app, cascade for others
+    let x: number, y: number;
+    if (app.id === 'messages') {
+      // Center Messages window in viewport
+      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+      const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
+      x = Math.max(20, (viewportWidth - app.defaultWidth) / 2);
+      y = Math.max(20, (viewportHeight - TASKBAR_H - app.defaultHeight) / 2);
+    } else {
+      // Cascade other windows from top-left
+      const ox = (windowCounter.current % 8) * 30;
+      const oy = (windowCounter.current % 6) * 30;
+      x = 140 + ox;
+      y = 30 + oy;
+    }
+
     const newWin: WindowState = {
       id, appId: app.id, title: app.label, icon: app.icon,
-      x: 140 + ox, y: 30 + oy,
+      x, y,
       width: app.defaultWidth, height: app.defaultHeight,
       minWidth: app.minWidth, minHeight: app.minHeight,
       zIndex: nextZ + 1, isMinimized: false, isMaximized: false,
@@ -1080,10 +1743,22 @@ export default function DemoOSPage() {
   }, [activeWindowId]);
 
   /* ── Listen for game-quit postMessages from iframed games ── */
+  /* Games send their own id (e.g. 'holo-lock', '2042') which won't match
+     the window's generated id. Map known game ids → appIds, then find
+     the window by appId. Falls back to direct id match. */
+  const gameIdToAppId: Record<string, string> = {
+    'holo-lock': 'circuit-sync-quest',
+    '2042': 'arcade-2042',
+  };
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.data?.type === 'game-quit' && typeof e.data.id === 'string') {
-        closeWindow(e.data.id);
+        const appId = gameIdToAppId[e.data.id];
+        if (appId) {
+          setWindows(prev => prev.filter(w => w.appId !== appId));
+        } else {
+          closeWindow(e.data.id);
+        }
       }
     };
     window.addEventListener('message', handler);
@@ -1128,70 +1803,125 @@ export default function DemoOSPage() {
   if (!booted) return <BootSequence onComplete={() => setBooted(true)} />;
 
   // Separate apps into visible groups
-  const STANDARD_IDS = ['my-computer','documents','my-pictures','my-videos','music-player'];
   const standardApps = APP_REGISTRY.filter(a => STANDARD_IDS.includes(a.id));
   const strandsApps = APP_REGISTRY.filter(a => !STANDARD_IDS.includes(a.id) && a.state !== 'hidden');
   const hiddenApps = APP_REGISTRY.filter(a => a.state === 'hidden');
 
   return (
     <EvolutionContext.Provider value={evo}>
-      <div className={`${styles.desktopOS} ${evo.era === 'year555' ? styles.desktopEvolved : ''}`}>
-        {/* Desktop Surface */}
-        <div className={styles.desktopSurface}>
-          <div className={styles.circuitPattern} />
-          <div className={styles.radialCyan} />
-          <div className={styles.radialPink} />
-          <div className={styles.scanlineOverlay} />
-        </div>
-
-        {/* Workspace — fills space above taskbar */}
-        <div className={styles.workspace}>
-          {/* Icon Grid — free-form desktop layout */}
-          <div className={styles.iconGrid}>
-            {/* Standard OS apps — top left */}
-            <div className={styles.iconGroup}>
-              {standardApps.map(app => (
-                <DesktopIcon key={app.id} app={app} onOpen={() => openWindow(app)} onLockedClick={showToast} />
-              ))}
-            </div>
-            {/* Separator */}
-            <div className={styles.iconSep} />
-            {/* Strands apps */}
-            <div className={styles.iconGroup}>
-              {strandsApps.map(app => (
-                <DesktopIcon key={app.id} app={app} onOpen={() => openWindow(app)} onLockedClick={showToast} />
-              ))}
-            </div>
-            {/* Hidden row */}
-            <div className={styles.iconSep} />
-            <div className={styles.iconGroupHidden}>
-              {hiddenApps.map(app => (
-                <DesktopIcon key={app.id} app={app} onOpen={() => {}} onLockedClick={showToast} />
-              ))}
-            </div>
+      <QuestContext.Provider value={questContextValue}>
+      <AvatarContext.Provider value={avatarContextValue}>
+        <div className={`${styles.desktopOS} ${evo.era === 'year555' ? styles.desktopEvolved : ''}`}>
+          {/* Desktop Surface */}
+          <div className={styles.desktopSurface}>
+            <div className={styles.circuitPattern} />
+            <div className={styles.radialCyan} />
+            <div className={styles.radialPink} />
+            <div className={styles.scanlineOverlay} />
           </div>
 
-          {/* Windows */}
-          {windows.map(win => (
-            <Window key={win.id} win={win} isActive={win.id === activeWindowId}
-              onFocus={() => focusWindow(win.id)}
-              onClose={() => closeWindow(win.id)}
-              onMinimize={() => minimizeWindow(win.id)}
-              onMaximize={() => maximizeWindow(win.id)}
-              onMove={(x, y) => moveWindow(win.id, x, y)}
-              onResize={(w, h, x, y) => resizeWindow(win.id, w, h, x, y)}>
-              <AppContent appId={win.appId} />
-            </Window>
-          ))}
+          {/* Workspace — fills space above taskbar */}
+          <div className={styles.workspace}>
+            {/* Icon Grid — free-form desktop layout */}
+            <div className={styles.iconGrid}>
+              {/* Standard OS apps — top left */}
+              <div className={styles.iconGroup}>
+                {standardApps.map(app => (
+                  <DesktopIcon key={app.id} app={app} onOpen={() => openWindow(app)} onLockedClick={showToast} />
+                ))}
+              </div>
+              {/* Separator */}
+              <div className={styles.iconSep} />
+              {/* Strands apps */}
+              <div className={styles.iconGroup}>
+                {strandsApps.map(app => (
+                  <DesktopIcon key={app.id} app={app} onOpen={() => openWindow(app)} onLockedClick={showToast} />
+                ))}
+              </div>
+              {/* Hidden row */}
+              <div className={styles.iconSep} />
+              <div className={styles.iconGroupHidden}>
+                {hiddenApps.map(app => (
+                  <DesktopIcon key={app.id} app={app} onOpen={() => {}} onLockedClick={showToast} />
+                ))}
+              </div>
+
+              {/* Quest dynamic files — materialise during narrative */}
+              {desktopFiles.length > 0 && (
+                <>
+                  <div className={styles.iconSep} />
+                  <div className={styles.iconGroup}>
+                    {desktopFiles.map((file, i) => (
+                      <div
+                        key={`quest-file-${i}`}
+                        className={styles.desktopIcon}
+                        style={{ animation: 'fadeIn 0.5s ease both' }}
+                        onDoubleClick={() => {
+                          if (file.renamed && file.name.endsWith('.mp4')) {
+                            showToast('Signal unstable — use Signal Sync to stabilise playback');
+                          } else {
+                            showToast('File format not recognised. Try renaming it.');
+                          }
+                        }}
+                        onContextMenu={(e) => handleFileContextMenu(e, file.name)}
+                      >
+                        <span className={styles.iconGlyph}>{file.icon}</span>
+                        <span className={styles.iconLabel} style={{
+                          fontSize: '7px',
+                          color: file.renamed ? 'var(--c-accent)' : 'var(--c-pink)',
+                          textShadow: file.renamed ? 'none' : '0 0 6px rgba(240,0,184,0.4)',
+                        }}>
+                          {file.name.length > 20 ? file.name.slice(0, 18) + '...' : file.name}
+                        </span>
+                        {!file.renamed && (
+                          <span style={{
+                            position: 'absolute', top: '4px', right: '4px',
+                            width: '6px', height: '6px', borderRadius: '50%',
+                            background: 'var(--c-pink)', boxShadow: '0 0 6px rgba(240,0,184,0.6)',
+                            animation: 'pinkPulse 2s ease-in-out infinite',
+                          }} />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Windows */}
+            {windows.map(win => (
+              <Window key={win.id} win={win} isActive={win.id === activeWindowId}
+                onFocus={() => focusWindow(win.id)}
+                onClose={() => closeWindow(win.id)}
+                onMinimize={() => minimizeWindow(win.id)}
+                onMaximize={() => maximizeWindow(win.id)}
+                onMove={(x, y) => moveWindow(win.id, x, y)}
+                onResize={(w, h, x, y) => resizeWindow(win.id, w, h, x, y)}>
+                <AppContent appId={win.appId} />
+              </Window>
+            ))}
+          </div>
+
+          {/* Context Menu — for right-click rename on quest files */}
+          {contextMenu && (
+            <DesktopContextMenu
+              x={contextMenu.x}
+              y={contextMenu.y}
+              fileName={contextMenu.fileName}
+              onRename={handleFileRename}
+              onClose={() => setContextMenu(null)}
+            />
+          )}
+
+          {/* Toast notification */}
+          {toast && <NotificationToast message={toast.msg} toastKey={toast.key} onDismiss={() => setToast(null)} />}
+
+          {/* Taskbar — pinned bottom */}
+          <Taskbar windows={windows} activeWindowId={activeWindowId}
+            onWindowClick={handleTaskbarClick} evo={evo} onToggleEra={toggleEra} />
         </div>
-
-        {/* Toast notification */}
-        {toast && <NotificationToast message={toast.msg} toastKey={toast.key} onDismiss={() => setToast(null)} />}
-
-        {/* Taskbar — pinned bottom */}
-        <Taskbar windows={windows} activeWindowId={activeWindowId}
-          onWindowClick={handleTaskbarClick} evo={evo} onToggleEra={toggleEra} />
-      </div>
+      </AvatarContext.Provider>
+      </QuestContext.Provider>
     </EvolutionContext.Provider>
   );
 }

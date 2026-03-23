@@ -1,0 +1,123 @@
+/* ═══ RENAME BOX — appears on right-click ═══ */
+
+.renameBox {
+  position: fixed;
+  background: rgba(10, 11, 13, 0.96);
+  border: 1px solid rgba(0, 194, 255, 0.25);
+  border-radius: 8px;
+  padding: 14px 16px;
+  width: 340px;
+  box-shadow:
+    0 0 24px rgba(0, 194, 255, 0.12),
+    0 8px 32px rgba(0, 0, 0, 0.6);
+  z-index: 10000;
+  animation: boxIn 0.2s ease;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+@keyframes boxIn {
+  from { opacity: 0; transform: translateY(4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Label ─── */
+.renameLabel {
+  font: 600 9px var(--font-display, 'Orbitron', monospace);
+  color: rgba(0, 194, 255, 0.5);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+/* ─── Current filename display ─── */
+.fileDisplay {
+  background: rgba(0, 194, 255, 0.03);
+  border: 1px solid rgba(0, 194, 255, 0.08);
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  font: 400 13px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 0.5px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.fileBase {
+  color: var(--c-text, #E2E8F0);
+}
+
+.fileExt {
+  color: var(--c-pink, #F000B8);
+  animation: extFlash 1.2s ease-in-out infinite;
+  text-shadow: 0 0 8px rgba(240, 0, 184, 0.4);
+}
+
+@keyframes extFlash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ─── Input ─── */
+.renameInput {
+  width: 100%;
+  padding: 9px 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 194, 255, 0.15);
+  border-radius: 4px;
+  font: 400 13px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-accent, #00C2FF);
+  outline: none;
+  caret-color: var(--c-accent, #00C2FF);
+  letter-spacing: 0.5px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.renameInput:focus {
+  border-color: var(--c-accent, #00C2FF);
+  box-shadow: 0 0 12px rgba(0, 194, 255, 0.2);
+}
+
+/* ─── Action buttons ─── */
+.renameActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.renameBtn {
+  flex: 1;
+  padding: 7px 12px;
+  background: rgba(0, 194, 255, 0.1);
+  border: 1px solid rgba(0, 194, 255, 0.3);
+  border-radius: 4px;
+  font: 600 10px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-accent, #00C2FF);
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.renameBtn:hover {
+  background: rgba(0, 194, 255, 0.2);
+  border-color: rgba(0, 194, 255, 0.5);
+  box-shadow: 0 0 12px rgba(0, 194, 255, 0.15);
+}
+
+.renameBtnCancel {
+  flex: 1;
+  padding: 7px 12px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  font: 600 10px var(--font-display, 'Orbitron', monospace);
+  color: var(--c-dim, #718096);
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.renameBtnCancel:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--c-sub, #A0AEC0);
+}

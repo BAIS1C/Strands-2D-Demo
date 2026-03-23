@@ -72,7 +72,7 @@ export default function GamePage() {
 
 function GameDesktop({ playerData }: { playerData: PlayerData }) {
   // State
-  const [scene, setScene] = useState<Scene>('desktop');
+  const [scene, setScene] = useState<Scene>('boot');
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const choicesLog = useRef<string[]>([]);
   const [currentChoices, setCurrentChoices] = useState<Choice[]>([]);
@@ -98,6 +98,12 @@ function GameDesktop({ playerData }: { playerData: PlayerData }) {
   const [patternCount, setPatternCount] = useState(0);
   const [patternTime, setPatternTime] = useState(0);
   const [fadingMsgs, setFadingMsgs] = useState<Set<string>>(new Set());
+  // ═══ MINI-GAME & QUEST STATE ═══
+  const [questComplete, setQuestComplete] = useState(false);
+  const [show2042, setShow2042] = useState(false);
+  const [showCircuitSync, setShowCircuitSync] = useState(false);
+  const [showHoloLock, setShowHoloLock] = useState(false);
+  const [arcadeScore, setArcadeScore] = useState(0);
 
   const profileRef = useRef<Profile>({ EI: 0, SN: 0, TF: 0, JP: 0 });
   const nkqRef = useRef<NKQ>({ speed: 0, pattern: 0, memory: 0 });
@@ -191,11 +197,27 @@ function GameDesktop({ playerData }: { playerData: PlayerData }) {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, currentChoices]);
 
-  // ═══ INITIAL TOAST ═══
+  // ═══ BOOT SEQUENCE ═══
   useEffect(() => {
-    const timer = setTimeout(() => { toast('You have unread messages'); glitch(); }, 1800);
+    if (scene !== 'boot') return;
+    const timer = setTimeout(() => {
+      setScene('desktop');
+      setTimeout(() => { toast('You have unread messages'); glitch(); }, 1800);
+    }, 3800);
     return () => clearTimeout(timer);
-  }, [toast, glitch]);
+  }, [scene, toast, glitch]);
+
+  // ═══ LISTEN FOR ARCADE POSTMESSAGE ═══
+  useEffect(() => {
+    const handleMsg = (e: MessageEvent) => {
+      if (e.data?.type === 'ARCADE_SCORE') {
+        setArcadeScore(e.data.score || 0);
+        nkqRef.current.pattern = Math.max(nkqRef.current.pattern, Math.min(1, (e.data.score || 0) / 5000));
+      }
+    };
+    window.addEventListener('message', handleMsg);
+    return () => window.removeEventListener('message', handleMsg);
+  }, []);
 
   // ═══ SCENE RUNNER ═══
   // Using a ref-based queue approach to avoid stale closure hell
@@ -565,6 +587,25 @@ function GameDesktop({ playerData }: { playerData: PlayerData }) {
     }, 1000);
   }
 
+  // ═══ PERSONALITY ASSESSMENT READBACK ═══
+  function buildReveal(): string {
+    const p = profileRef.current;
+    const lines: string[] = [];
+    lines.push(p.EI < 0
+      ? "You opened the file alone. Didn't need anyone else to go first. That's rare."
+      : "You reached out before you acted. Built trust with strangers in minutes. That's a skill most people underestimate.");
+    lines.push(p.SN > 0
+      ? 'When you looked at the document, you went straight for the data. Timestamps. Sequence gaps. You want evidence before meaning.'
+      : "When you looked at the document, you saw a system. Someone hiding something. A pattern bigger than the fragments.");
+    lines.push(p.TF > 0
+      ? 'When things got dangerous, you thought in terms of risk and logic. That clarity cuts through panic.'
+      : "When things got dangerous, your first instinct was to check on the person who was scared. Not the data. The human.");
+    lines.push(p.JP > 0
+      ? "Under pressure, you made a plan. Structured. Step by step. That composure doesn't come from nowhere."
+      : 'Under pressure, you scattered. Improvised. Moved faster than they could clean. Messy. But it works.');
+    return lines.join('<br/><br/>');
+  }
+
   // ═══ THE REVEAL ═══
   async function theReveal() {
     runScene('reveal');
@@ -606,16 +647,20 @@ function GameDesktop({ playerData }: { playerData: PlayerData }) {
     await addMsg('???', 'Now you know what we know. A fragment. Not the whole truth — nobody has that. But enough to understand that the world you\'ve been told about isn\'t the one that exists.', 'unknown', 6000);
 
     setTimeout(async () => {
-      await addMsg('???', 'I\'ve been watching how you respond. Not what you chose — <em>how</em> you chose. The way you process information under pressure. The instincts that fire before your logic catches up.', 'unknown', 0);
-      await addMsg('???', 'That tells me more than any profile ever could. And it\'s been recorded — not by me. By the system that sent you the file in the first place.', 'unknown', 4000);
-      await addMsg('???', 'You weren\'t supposed to find it. But you did. And you didn\'t look away.', 'unknown', 7000);
-      await addMsg('???', 'There are others like you. People who don\'t scroll past the glitch. People who open the file. People who <em>stay</em>.', 'unknown', 10000);
-      await addMsg('???', '<span style="color:var(--c-yellow)">The signal is real. And it\'s just the beginning.</span>', 'unknown', 13000);
+      await addMsg('???', buildReveal(), 'unknown', 0);
+      await addMsg('???', 'I\'ve been watching how you respond. Not what you chose — <em>how</em> you chose. The way you process information under pressure. The instincts that fire before your logic catches up.', 'unknown', 5000);
+      await addMsg('???', 'That tells me more than any profile ever could. And it\'s been recorded — not by me. By the system that sent you the file in the first place.', 'unknown', 9000);
+      await addMsg('???', 'You weren\'t supposed to find it. But you did. And you didn\'t look away.', 'unknown', 12000);
+      await addMsg('???', 'There are others like you. People who don\'t scroll past the glitch. People who open the file. People who <em>stay</em>.', 'unknown', 15000);
+      await addMsg('???', '<span style="color:var(--c-yellow)">The signal is real. And it\'s just the beginning.</span>', 'unknown', 18000);
 
-      setTimeout(() => showChoices([
-        { id: 'go_deeper', label: 'I want to know more', next: () => handleContinue() },
-        { id: 'join_signal', label: 'Where are the others?', style: 'alt', next: () => window.open('https://t.me/+WZTkHqJjUOI3YjQ1', '_blank') },
-      ]), 15000);
+      setTimeout(() => {
+        setQuestComplete(true);
+        showChoices([
+          { id: 'go_deeper', label: 'I want to know more', next: () => handleContinue() },
+          { id: 'join_signal', label: 'Where are the others?', style: 'alt', next: () => window.open('https://t.me/+WZTkHqJjUOI3YjQ1', '_blank') },
+        ]);
+      }, 20000);
     }, 8500);
   }
 
@@ -630,12 +675,28 @@ function GameDesktop({ playerData }: { playerData: PlayerData }) {
           Your signal has been recorded.<br/>Full connection available Q4 2026.<br/><br/>
           <span style="color:var(--c-dim)">The others are already gathering.</span>
         </div>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)">
+          <div style="color:var(--c-green);font-family:var(--font-display);font-size:11px;letter-spacing:1px;margin-bottom:8px">APPLICATIONS UNLOCKED</div>
+          <div style="color:var(--c-sub);font-size:12px;line-height:1.8">
+            🕹 2042 — Reflex Calibration<br/>
+            ⚡ Circuit Sync — Neural Mapping<br/>
+            🔓 HoloLock — Circuit Alignment
+          </div>
+        </div>
       </div>`, 'system', 0);
       setTimeout(() => showChoices([
         { id: 'telegram', label: '✈ Find the others (Telegram)', style: 'alt', next: () => window.open('https://t.me/+WZTkHqJjUOI3YjQ1', '_blank') },
-        { id: 'back', label: '← Return', next: () => { window.location.href = '/'; } },
+        { id: 'explore', label: '🕹 Explore unlocked apps', next: () => { setShowChat(false); toast('Tap the desktop icons to launch 2042, Circuit Sync, or HoloLock.'); } },
+        { id: 'back', label: '← Return to site', next: () => { window.location.href = '/'; } },
       ]), 1500);
     }, 2000);
+
+    console.log('=== STRANDS SYNC PROFILE ===');
+    const p = profileRef.current;
+    console.log('Type:', (p.EI > 0 ? 'E' : 'I') + (p.SN > 0 ? 'S' : 'N') + (p.TF > 0 ? 'T' : 'F') + (p.JP > 0 ? 'J' : 'P'));
+    console.log('Raw:', p);
+    console.log('NKQ:', nkqRef.current);
+    console.log('Choices:', choicesLog.current);
   }
 
   // ═══ RENDER ═══
@@ -650,6 +711,21 @@ function GameDesktop({ playerData }: { playerData: PlayerData }) {
   };
 
   const currentPuzzleData = codePuzzles[currentPuzzle];
+
+  // ═══ BOOT SCREEN ═══
+  if (scene === 'boot') {
+    return (
+      <div className={styles.bootScreen}>
+        <div className={styles.bootText}>
+          <div className={styles.bootLine} style={{ animationDelay: '0.3s' }}>Initialising secure connection...</div>
+          <div className={styles.bootLine} style={{ animationDelay: '0.8s' }}>Something went wrong.</div>
+          <div className={styles.bootLine} style={{ animationDelay: '1.5s' }}>Retrying...</div>
+          <div className={styles.bootLine} style={{ animationDelay: '2.2s', color: 'var(--c-accent)' }}>// SIGNAL DETECTED — SOURCE UNKNOWN</div>
+          <div className={styles.bootLine} style={{ animationDelay: '3.0s', color: 'var(--c-pink)' }}>Connecting <span className={styles.cursor} /></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.desktop}>
@@ -676,15 +752,23 @@ function GameDesktop({ playerData }: { playerData: PlayerData }) {
             <div className={styles.iconGlyph}>📄</div>
             <span className={styles.iconLabel}>Document</span>
           </button>
-          <button className={styles.icon} onClick={() => { toast('2042 — Arcade access locked. Complete Signal Reconstruction first.'); glitch(); }}>
+          <button className={`${styles.icon} ${!questComplete ? styles.iconLocked : ''}`} onClick={() => {
+            if (!questComplete) { toast('2042 — Arcade access locked. Complete Signal Reconstruction first.'); glitch(); }
+            else { setShow2042(true); setShowChat(false); setShowDoc(false); }
+          }}>
             <div className={styles.iconGlyph}>🕹</div>
             <span className={styles.iconLabel}>2042</span>
+            {questComplete && !show2042 && <span className={styles.iconUnlock}>NEW</span>}
           </button>
-          <button className={styles.icon} onClick={() => { toast('Circuit Sync — Available after Messages sequence.'); }}>
+          <button className={`${styles.icon} ${!questComplete ? styles.iconLocked : ''}`} onClick={() => {
+            if (!questComplete) { toast('Circuit Sync — Available after Signal Reconstruction.'); }
+            else { setShowCircuitSync(true); setShowChat(false); setShowDoc(false); }
+          }}>
             <div className={styles.iconGlyph}>⚡</div>
             <span className={styles.iconLabel}>Circuit Sync</span>
+            {questComplete && !showCircuitSync && <span className={styles.iconUnlock}>NEW</span>}
           </button>
-          <button className={styles.icon} onClick={() => { toast('Proper Gander — Broadcast fragments locked. Solve Circuit Sync to unlock.'); }}>
+          <button className={`${styles.icon} ${styles.iconLocked}`} onClick={() => { toast('Proper Gander — Broadcast fragments locked. Coming Season 0.'); }}>
             <div className={styles.iconGlyph}>📡</div>
             <span className={styles.iconLabel}>Proper Gander</span>
           </button>
@@ -692,13 +776,17 @@ function GameDesktop({ playerData }: { playerData: PlayerData }) {
             <div className={styles.iconGlyph}>🧠</div>
             <span className={styles.iconLabel}>Mymories</span>
           </button>
-          <button className={styles.icon} onClick={() => { toast('EveryWear — Desktop client upgrade. Available post-Season 0.'); }}>
+          <button className={`${styles.icon} ${styles.iconLocked}`} onClick={() => { toast('EveryWear — Desktop client upgrade. Available post-Season 0.'); }}>
             <div className={styles.iconGlyph}>🖥</div>
             <span className={styles.iconLabel}>EveryWear</span>
           </button>
-          <button className={styles.icon} onClick={() => { toast('HoloLock — Slicing mechanic. Requires active quest.'); glitch(); }}>
+          <button className={`${styles.icon} ${!questComplete ? styles.iconLocked : ''}`} onClick={() => {
+            if (!questComplete) { toast('HoloLock — Slicing mechanic. Complete quest to unlock.'); glitch(); }
+            else { setShowHoloLock(true); setShowChat(false); setShowDoc(false); }
+          }}>
             <div className={styles.iconGlyph}>🔓</div>
             <span className={styles.iconLabel}>HoloLock</span>
+            {questComplete && !showHoloLock && <span className={styles.iconUnlock}>NEW</span>}
           </button>
         </div>
         {/* Secondary icons — bottom-right cluster */}
@@ -851,14 +939,63 @@ function GameDesktop({ playerData }: { playerData: PlayerData }) {
             </div>
           </div>
         )}
+
+        {/* ═══ 2042 ARCADE ═══ */}
+        {show2042 && (
+          <div className={styles.window} data-window="arcade">
+            <div className={styles.windowHeader}>
+              <div className={styles.windowDots}>
+                <span className={styles.dotClose} onClick={() => setShow2042(false)} />
+                <span className={styles.dotMin} />
+                <span className={styles.dotMax} />
+              </div>
+              <div className={styles.windowTitle}>2042 // SIGNAL ARCADE — reflex calibration</div>
+            </div>
+            <iframe src="/games/2042.html" className={styles.gameFrame} title="2042 Signal Arcade" />
+          </div>
+        )}
+
+        {/* ═══ CIRCUIT SYNC ═══ */}
+        {showCircuitSync && (
+          <div className={styles.window} data-window="arcade">
+            <div className={styles.windowHeader}>
+              <div className={styles.windowDots}>
+                <span className={styles.dotClose} onClick={() => setShowCircuitSync(false)} />
+                <span className={styles.dotMin} />
+                <span className={styles.dotMax} />
+              </div>
+              <div className={styles.windowTitle}>CIRCUIT SYNC // SIGNAL PATTERN — neural mapping</div>
+            </div>
+            <iframe src="/games/circuit-sync.html" className={styles.gameFrame} title="Circuit Sync" />
+          </div>
+        )}
+
+        {/* ═══ HOLO-LOCK ═══ */}
+        {showHoloLock && (
+          <div className={styles.window} data-window="arcade">
+            <div className={styles.windowHeader}>
+              <div className={styles.windowDots}>
+                <span className={styles.dotClose} onClick={() => setShowHoloLock(false)} />
+                <span className={styles.dotMin} />
+                <span className={styles.dotMax} />
+              </div>
+              <div className={styles.windowTitle}>HOLO-LOCK // SIGNAL BREACH — circuit alignment</div>
+            </div>
+            <iframe src="/games/holo-lock.html" className={styles.gameFrame} title="Holo-Lock" />
+          </div>
+        )}
       </div>
 
       {/* Taskbar */}
       <div className={styles.taskbar}>
         <button className={`${styles.taskbarItem} ${showChat ? styles.taskbarActive : ''}`} onClick={handleOpenChat}>💬 Messages</button>
-        {showDoc && <button className={`${styles.taskbarItem} ${styles.taskbarActive}`}>📄 Document</button>}
-        {showPuzzle && <button className={`${styles.taskbarItem} ${styles.taskbarActive}`}>⚡ Circuit Sync</button>}
+        {showDoc && <button className={`${styles.taskbarItem} ${styles.taskbarActive}`} onClick={() => setShowDoc(true)}>📄 Document</button>}
+        {showPuzzle && <button className={`${styles.taskbarItem} ${styles.taskbarActive}`}>⚡ Decode</button>}
         {showPattern && <button className={`${styles.taskbarItem} ${styles.taskbarActive}`}>🧩 Pattern</button>}
+        {show2042 && <button className={`${styles.taskbarItem} ${styles.taskbarActive}`} onClick={() => setShow2042(true)}>🕹 2042</button>}
+        {showCircuitSync && <button className={`${styles.taskbarItem} ${styles.taskbarActive}`} onClick={() => setShowCircuitSync(true)}>⚡ Circuit Sync</button>}
+        {showHoloLock && <button className={`${styles.taskbarItem} ${styles.taskbarActive}`} onClick={() => setShowHoloLock(true)}>🔓 HoloLock</button>}
+        {questComplete && <span className={styles.taskbarSync}>● SYNC LOCKED</span>}
         <span className={styles.taskbarClock}>{new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
       </div>
     </div>

@@ -14,8 +14,14 @@
   padding: 0;
 }
 
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 html {
-  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -24,9 +30,7 @@ body {
   background: var(--c-bg);
   color: var(--c-text);
   font-family: var(--font-body);
-  min-height: 100vh;
   line-height: 1.6;
-  overflow-x: hidden;
 }
 
 a {

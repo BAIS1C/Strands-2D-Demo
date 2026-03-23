@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>HOLO-LOCK // SIGNAL BREACH</title>
+<title>CIRCUIT REROUTE // ALIGNMENT PANEL</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
   *{margin:0;padding:0;box-sizing:border-box}
@@ -131,7 +131,7 @@
 </div>
 <div id="game">
   <div id="hud">
-    <div>LOCK: <span class="hud-pink" id="lockId">SIGNAL-BREACH-01</span></div>
+    <div>ROUTE: <span class="hud-pink" id="lockId">REROUTE-01</span></div>
     <div>MOVES: <span class="hud-val" id="movesHud">0</span></div>
     <div>TIER: <span class="hud-val" id="tierHud">1</span></div>
   </div>
@@ -142,8 +142,8 @@
 
     <!-- Complete overlay -->
     <div id="complete">
-      <div class="breach-sub">ACCESS GRANTED</div>
-      <div class="breach-title">BREACHED</div>
+      <div class="breach-sub">ROUTE PATCH APPLIED</div>
+      <div class="breach-title">REROUTED</div>
       <div class="breach-sub">CIRCUIT ALIGNED // SIGNAL RELEASED</div>
       <div class="breach-score" id="breachScore"></div>
       <button class="breach-btn" onclick="newPuzzle()">NEXT LOCK ▶</button>
@@ -151,7 +151,7 @@
   </div>
 
   <div id="statusArea">
-    <div id="statusMsg">ALIGN THE CIRCUIT TO BREACH</div>
+    <div id="statusMsg">ALIGN THE CIRCUIT TO REROUTE</div>
     <div id="hintMsg">Scroll or drag each strip vertically · One image unlocks</div>
   </div>
 
@@ -285,12 +285,13 @@ function genCircuit(seed) {
   return { traces, nodes, seamConns };
 }
 
-// Pre-generate 4 circuits
+// Pre-generate 4 circuits — seeded with random salt so every load is different
 let circuits = [];
+let loadSalt = Math.floor(Math.random() * 99999);
 function buildCircuits() {
   circuits = [];
   for (let i = 0; i < N_IMAGES; i++) {
-    circuits.push(genCircuit(TIER * 100 + i * 17 + 3));
+    circuits.push(genCircuit(loadSalt + TIER * 100 + i * 17 + 3));
   }
 }
 
@@ -529,7 +530,7 @@ function updateStripDots(stripMatches) {
   let msg = document.getElementById('statusMsg');
   let hint = document.getElementById('hintMsg');
   if (!solved) {
-    if (correctCount === 0) { msg.textContent = 'ALIGN THE CIRCUIT TO BREACH'; msg.style.color = 'rgba(0,194,255,0.4)'; }
+    if (correctCount === 0) { msg.textContent = 'ALIGN THE CIRCUIT TO REROUTE'; msg.style.color = 'rgba(0,194,255,0.4)'; }
     else if (correctCount === 1) { msg.textContent = '▌ TRACE DETECTED'; msg.style.color = C.cyan; }
     else if (correctCount === 2) { msg.textContent = '▌▌ PARTIAL ALIGNMENT'; msg.style.color = C.warn; }
     else if (correctCount === 3) { msg.textContent = '▌▌▌ CIRCUIT ALMOST COMPLETE'; msg.style.color = '#ff8800'; }
@@ -650,7 +651,7 @@ function newPuzzle() {
   solveAnim = 0;
   selectedBarrel = 0;
   document.getElementById('movesHud').textContent = '0';
-  document.getElementById('lockId').textContent = `SIGNAL-BREACH-${String(TIER).padStart(2, '0')}`;
+  document.getElementById('lockId').textContent = `REROUTE-${String(TIER).padStart(2, '0')}`;
   document.getElementById('tierHud').textContent = TIER;
 }
 
