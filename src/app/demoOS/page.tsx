@@ -91,14 +91,16 @@ interface QuestState {
 const QuestContext = createContext<QuestState | null>(null);
 
 /* ═══════════════════════════════════════════════════════════════
-   AVATAR CONTEXT — Avaturn avatar creator integration
+   AVATAR CONTEXT — Character Studio integration (replaced Avaturn)
+   GLB blob URL is created from ArrayBuffer received via postMessage
+   from the Character Studio iframe.
    ═══════════════════════════════════════════════════════════════ */
 
 interface AvatarState {
   glbUrl: string | null;
   mode: 'create' | 'preview';
   setMode: (m: 'create' | 'preview') => void;
-  onAvatarExported: (url: string) => void;
+  onAvatarExported: (glbArrayBuffer: ArrayBuffer) => void;
 }
 
 const AvatarContext = createContext<AvatarState | null>(null);
@@ -133,13 +135,13 @@ const APP_REGISTRY: AppManifest[] = [
   { id: 'mymories',      label: 'Mymories',             icon: '🧠', minWidth: 360, minHeight: 440, defaultWidth: 400, defaultHeight: 480, state: 'available' },
   { id: 'myconsent',     label: 'MyConsent',             icon: '🛡️', minWidth: 400, minHeight: 400, defaultWidth: 460, defaultHeight: 480, state: 'available' },
 
-  // ── Avatar Creator — Avaturn integration ──
+  // ── Avatar Creator — Character Studio integration ──
   { id: 'avatar-creator', label: 'Avatar Creator', icon: '🧬', minWidth: 520, minHeight: 600, defaultWidth: 680, defaultHeight: 720, state: 'available' },
 
   // ── Sync-gated — show progress bar until threshold ──
   { id: 'signal-training', label: 'Signal Training',    icon: '🎯', minWidth: 640, minHeight: 480, defaultWidth: 800, defaultHeight: 600, state: 'available' },
   { id: 'arcade-2042',   label: 'Arcade 2042',          icon: '🕹️', minWidth: 480, minHeight: 620, defaultWidth: 500, defaultHeight: 680, state: 'available' },
-  { id: 'holo-lock',     label: 'Holo-Lock',            icon: '🔓', minWidth: 520, minHeight: 500, defaultWidth: 540, defaultHeight: 540, state: 'available' },
+  { id: 'holo-lock',     label: 'Circuit Sync',          icon: '🔓', minWidth: 520, minHeight: 500, defaultWidth: 540, defaultHeight: 540, state: 'available' },
 
   // ── Locked apps — visible but inaccessible ──
   { id: 'voice-sync',    label: 'Voice Sync',           icon: '🎙️', minWidth: 400, minHeight: 300, defaultWidth: 400, defaultHeight: 340, state: 'locked', lockMessage: 'Requires Signal Registration' },
@@ -447,43 +449,36 @@ function SoundWaveLauncher() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   AVATURN CREATOR — Iframe embed for avatar creation
-   Uses Avaturn's web SDK. Player creates avatar, we get GLB URL.
+   CHARACTER STUDIO — Iframe embed for avatar creation
+   Uses CharacterStudio-Strands (open source VRM/GLB avatar builder).
+   Player creates and customises their avatar with trait-based parts,
+   then clicks "USE IN GAME" which sends the optimised GLB via
+   postMessage. The GLB becomes the player's in-game character model.
 
-   SETUP REQUIRED: Register at developer.avaturn.me to get your
-   subdomain. Replace AVATURN_SUBDOMAIN below with your actual
-   subdomain (e.g., "strands" → "strands.avaturn.dev").
-   For demo, we show a branded placeholder until the subdomain
-   is configured.
+   CONFIGURATION: Set CHARACTER_STUDIO_URL below to wherever
+   Character Studio is deployed (subdomain, Vercel, or localhost).
    ═══════════════════════════════════════════════════════════════ */
 
-const AVATURN_SUBDOMAIN = 'strands';
+const CHARACTER_STUDIO_URL = process.env.NEXT_PUBLIC_CHARACTER_STUDIO_URL || '/studio';
 
-function AvaturnCreator({ onExport }: { onExport: (url: string) => void }) {
+function CharacterStudioCreator({ onExport }: { onExport: (glb: ArrayBuffer) => void }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
-  // Listen for Avaturn export messages
+  // Listen for Character Studio export messages
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      // Avaturn SDK sends export events via postMessage
-      if (e.data?.source === 'avaturn' && e.data?.eventName === 'v2.avatar.exported') {
-        const url = e.data?.data?.url || e.data?.data?.avatarUrl;
-        if (url) {
-          onExport(url);
+      if (e.data?.source === 'character-studio' && e.data?.eventName === 'avatar.exported') {
+        const glbData = e.data?.data?.glb;
+        if (glbData instanceof ArrayBuffer) {
+          onExport(glbData);
         }
-      }
-      // Also handle the older SDK format
-      if (e.data?.type === 'avaturn_avatar_exported' && e.data?.url) {
-        onExport(e.data.url);
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
   }, [onExport]);
-
-  const avaturnUrl = `https://${AVATURN_SUBDOMAIN}.avaturn.dev`;
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -502,12 +497,12 @@ function AvaturnCreator({ onExport }: { onExport: (url: string) => void }) {
           <span style={{
             font: '500 11px var(--font-display, Orbitron, monospace)',
             color: 'var(--c-accent, #00C2FF)', letterSpacing: '1px',
-          }}>LOADING AVATAR CREATOR...</span>
+          }}>LOADING CHARACTER STUDIO...</span>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
 
-      {/* Error state */}
+      {/* Error / fallback state */}
       {error && (
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column',
@@ -517,28 +512,14 @@ function AvaturnCreator({ onExport }: { onExport: (url: string) => void }) {
           <span style={{
             font: '600 13px var(--font-display, Orbitron, monospace)',
             color: 'var(--c-accent, #00C2FF)', letterSpacing: '1px', textAlign: 'center',
-          }}>AVATAR CREATOR</span>
+          }}>CHARACTER STUDIO</span>
           <span style={{
             font: '400 12px var(--font-body, Rajdhani, sans-serif)',
             color: 'var(--c-sub, #A0AEC0)', textAlign: 'center', maxWidth: '320px', lineHeight: '1.6',
           }}>
-            Create your 3D avatar from a selfie or from scratch.
-            Your avatar persists across the Strands metaverse — every game, every world, every interaction.
+            Build your signal avatar from modular VRM parts.
+            Your identity persists across the Strands metaverse — every game, every world, every interaction.
           </span>
-          <div style={{
-            padding: '12px 20px', background: 'rgba(0,194,255,0.06)',
-            border: '1px solid rgba(0,194,255,0.12)', borderRadius: '8px',
-            maxWidth: '300px', textAlign: 'center',
-          }}>
-            <span style={{
-              font: '400 11px var(--font-body, Rajdhani, sans-serif)',
-              color: 'var(--c-dim, #4A5568)', lineHeight: '1.5',
-            }}>
-              Avaturn integration requires a developer subdomain.
-              Register at <span style={{ color: '#00C2FF' }}>developer.avaturn.me</span> and
-              update AVATURN_SUBDOMAIN in the code.
-            </span>
-          </div>
           <button
             onClick={() => { setError(false); setLoaded(false); }}
             style={{
@@ -552,14 +533,14 @@ function AvaturnCreator({ onExport }: { onExport: (url: string) => void }) {
         </div>
       )}
 
-      {/* Avaturn iframe */}
+      {/* Character Studio iframe */}
       <iframe
         ref={iframeRef}
-        src={avaturnUrl}
-        title="Avaturn Avatar Creator"
+        src={CHARACTER_STUDIO_URL}
+        title="Character Studio — Strands Avatar Creator"
         onLoad={() => setLoaded(true)}
         onError={() => setError(true)}
-        allow="camera; microphone"
+        allow="camera; microphone; clipboard-write"
         style={{
           flex: 1, width: '100%', border: 'none',
           background: '#0A0B0D',
@@ -944,7 +925,7 @@ function AppContent({ appId }: { appId: string }) {
               color: 'var(--c-accent, #00C2FF)',
               letterSpacing: '1px',
             }}>
-              {avatarCtx.mode === 'create' ? '◈ AVATAR CREATOR' : '◈ AVATAR PREVIEW'}
+              {avatarCtx.mode === 'create' ? '◈ CHARACTER STUDIO' : '◈ AVATAR PREVIEW'}
             </span>
             <div style={{ display: 'flex', gap: '6px' }}>
               <button
@@ -972,9 +953,9 @@ function AppContent({ appId }: { appId: string }) {
             </div>
           </div>
 
-          {/* Avaturn iframe or 3D preview */}
+          {/* Character Studio iframe or 3D preview */}
           {avatarCtx.mode === 'create' ? (
-            <AvaturnCreator onExport={avatarCtx.onAvatarExported} />
+            <CharacterStudioCreator onExport={avatarCtx.onAvatarExported} />
           ) : avatarCtx.glbUrl ? (
             <AvatarPreview glbUrl={avatarCtx.glbUrl} />
           ) : (
@@ -1166,7 +1147,7 @@ function AppContent({ appId }: { appId: string }) {
         <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
           <iframe
             src="/games/holo-lock.html"
-            title="Holo-Lock — Circuit Alignment"
+            title="Circuit Sync — Node Alignment"
             style={{
               flex: 1,
               width: '100%',
@@ -1205,12 +1186,32 @@ function AppContent({ appId }: { appId: string }) {
         </div>
       );
 
-    case 'signal-training':
+    case 'signal-training': {
+      // eslint-disable-next-line react-hooks/rules-of-hooks, no-case-declarations
+      const avatarCtxForGame = useContext(AvatarContext);
       return (
         <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
           <iframe
             src="/games/strands-tutorial-fps.html"
             title="Signal Training — StrandsNation Tutorial"
+            onLoad={(e) => {
+              // Send the player's avatar GLB to the game iframe if available
+              if (avatarCtxForGame?.glbUrl) {
+                fetch(avatarCtxForGame.glbUrl)
+                  .then(r => r.arrayBuffer())
+                  .then(glb => {
+                    const iframeWindow = (e.target as HTMLIFrameElement).contentWindow;
+                    if (iframeWindow) {
+                      iframeWindow.postMessage({
+                        source: 'demoos',
+                        eventName: 'load-avatar',
+                        data: { glb }
+                      }, '*');
+                    }
+                  })
+                  .catch(err => console.warn('[DemoOS] Failed to send avatar to Signal Training:', err));
+              }
+            }}
             style={{
               flex: 1,
               width: '100%',
@@ -1223,13 +1224,14 @@ function AppContent({ appId }: { appId: string }) {
           />
         </div>
       );
+    }
 
     case 'holo-lock':
       return (
         <div className={styles.appBody} style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
           <iframe
             src="/games/holo-lock.html"
-            title="Holo-Lock — Signal Breach"
+            title="Circuit Sync — Signal Breach"
             style={{
               flex: 1,
               width: '100%',
@@ -1259,6 +1261,7 @@ function AppContent({ appId }: { appId: string }) {
             targetHoldTime={round === 1 ? 8 : round === 2 ? 12 : 16}
             round={round}
             label={`PROPER GANDER — EP${round}`}
+            videoSrc="/video/pg-intro.mp4"
             onComplete={() => {
               questCtx?.callbacks.onNotify(`Signal Sync Round ${round} Complete!`);
             }}
@@ -1658,11 +1661,17 @@ export default function DemoOSPage() {
     glbUrl: avatarGlbUrl,
     mode: avatarCreatorMode,
     setMode: setAvatarCreatorMode,
-    onAvatarExported: (url: string) => {
-      setAvatarGlbUrl(url);
+    onAvatarExported: (glbArrayBuffer: ArrayBuffer) => {
+      // Revoke previous blob URL to prevent memory leaks
+      if (avatarGlbUrl && avatarGlbUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarGlbUrl);
+      }
+      const blob = new Blob([glbArrayBuffer], { type: 'model/gltf-binary' });
+      const blobUrl = URL.createObjectURL(blob);
+      setAvatarGlbUrl(blobUrl);
       setAvatarCreatorMode('preview');
-      showToast('AVATAR EXPORTED — Signal identity locked.');
-      console.log('[Avatar] GLB exported:', url);
+      showToast('AVATAR SYNCED — Signal identity locked.');
+      console.log('[Avatar] GLB received from Character Studio, blob URL:', blobUrl);
     },
   }), [avatarGlbUrl, avatarCreatorMode, showToast]);
 
@@ -1749,21 +1758,29 @@ export default function DemoOSPage() {
   const gameIdToAppId: Record<string, string> = {
     'holo-lock': 'circuit-sync-quest',
     '2042': 'arcade-2042',
+    'signal-training': 'signal-training',
   };
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.data?.type === 'game-quit' && typeof e.data.id === 'string') {
-        const appId = gameIdToAppId[e.data.id];
-        if (appId) {
+        const appId = gameIdToAppId[e.data.id] || e.data.id;
+        const win = windows.find(w => w.appId === appId);
+        if (win) {
           setWindows(prev => prev.filter(w => w.appId !== appId));
         } else {
           closeWindow(e.data.id);
         }
       }
+      // Handle game completion — feeds into quest system
+      if (e.data?.type === 'game-complete' && typeof e.data.id === 'string') {
+        const score = e.data.score || 0;
+        console.log(`[DemoOS] Game "${e.data.id}" completed with score: ${score}`);
+        showToast(`SIGNAL TRAINING COMPLETE — Sync score: ${score}`);
+      }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [closeWindow]);
+  }, [closeWindow, windows, showToast]);
 
   const minimizeWindow = useCallback((id: string) => {
     setWindows(prev => prev.map(w => w.id === id ? { ...w, isMinimized: true } : w));

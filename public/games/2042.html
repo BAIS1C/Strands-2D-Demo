@@ -128,7 +128,8 @@
         <b>MOVE</b> — Mouse / Touch<br>
         <b>FIRE</b> — Hold Left Click / Touch Right<br>
         <b>BARREL ROLL</b> — Space / Double-Tap<br>
-        <b>BOMB</b> — B / Triple-Tap
+        <b>BOMB</b> — B / Triple-Tap<br>
+        <b>MENU</b> — F1 / ESC
       </div>
       <button class="btn" onclick="startGame()">INITIATE SIGNAL</button>
     </div>
@@ -147,9 +148,9 @@
     <h2>⏸ PAUSED</h2>
     <button class="pause-btn" id="resumeBtn">RESUME</button>
     <button class="pause-btn quit" id="quitBtn">QUIT</button>
-    <div class="p-hint">ESC TO RESUME</div>
+    <div class="p-hint">F1 TO RESUME &nbsp;|&nbsp; ESC TO RESUME</div>
   </div>
-  <div id="touch-hint">TAP RIGHT → FIRE &nbsp;|&nbsp; DOUBLE-TAP → ROLL</div>
+  <div id="touch-hint">TAP RIGHT → FIRE &nbsp;|&nbsp; DOUBLE-TAP → ROLL &nbsp;|&nbsp; F1 MENU</div>
 </div>
 
 <script>
@@ -852,6 +853,7 @@ document.getElementById('resumeBtn').addEventListener('click',resumeGame);
 document.getElementById('quitBtn').addEventListener('click',quitGame);
 
 document.addEventListener('keydown',e=>{
+  if(e.code==='F1'){e.preventDefault();if(isPaused)resumeGame();else pauseGame();return;}
   if(e.code==='Escape'){e.preventDefault();if(isPaused)resumeGame();else pauseGame();return;}
   if(isPaused)return;
   if(e.code==='Space'){e.preventDefault();activateRoll();}

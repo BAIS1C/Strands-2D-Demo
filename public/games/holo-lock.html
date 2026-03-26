@@ -127,7 +127,7 @@
   <h2>⏸ PAUSED</h2>
   <button class="pause-btn" id="resumeBtn">RESUME</button>
   <button class="pause-btn quit" id="quitBtn">QUIT</button>
-  <div class="p-hint">ESC TO RESUME</div>
+  <div class="p-hint">F1 TO RESUME &nbsp;|&nbsp; ESC TO RESUME</div>
 </div>
 <div id="game">
   <div id="hud">
@@ -583,6 +583,7 @@ document.getElementById('quitBtn').addEventListener('click',quitGame);
 
 // Keyboard
 document.addEventListener('keydown', e => {
+  if(e.code==='F1'){e.preventDefault();if(isPaused)resumeGame();else pauseGame();return;}
   if(e.code==='Escape'){e.preventDefault();if(isPaused)resumeGame();else pauseGame();return;}
   if(isPaused)return;
   if (e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); shiftBarrel(selectedBarrel, -1); }

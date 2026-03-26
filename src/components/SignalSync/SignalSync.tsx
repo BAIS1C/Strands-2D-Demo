@@ -33,6 +33,8 @@ interface SignalSyncProps {
   label?: string;
   /** Which cycle (affects spike types) */
   round?: number;
+  /** Video source URL — plays behind static, clarity driven by stability */
+  videoSrc?: string;
 }
 
 export interface SyncMetrics {
@@ -62,9 +64,11 @@ export default function SignalSync({
   onStabilityChange,
   label = 'SIGNAL FRAGMENT',
   round = 1,
+  videoSrc,
 }: SignalSyncProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [stability, setStability] = useState(0);
   const [syncTime, setSyncTime] = useState(0);
   const [complete, setComplete] = useState(false);
@@ -368,27 +372,57 @@ export default function SignalSync({
 
       {/* Static/Clarity field — visual feedback tied to stability */}
       <div className={styles.videoField}>
+        {/* Video layer — sits behind all overlays, opacity & blur driven by stability */}
+        {videoSrc && (
+          <video
+            ref={videoRef}
+            className={styles.videoLayer}
+            src={videoSrc}
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{
+              opacity: Math.min(1, stability * 1.4),
+              filter: stability > 0.7
+                ? 'blur(0px) saturate(1.2)'
+                : stability > 0.3
+                  ? `blur(${Math.round((0.7 - stability) * 8)}px) saturate(0.6)`
+                  : `blur(8px) saturate(0.2) brightness(0.4)`,
+            }}
+          />
+        )}
         <div
           className={styles.staticNoise}
           style={{ opacity: Math.max(0, 1 - stability * 1.3) }}
         />
         <div
           className={styles.clarityField}
-          style={{ opacity: Math.min(1, stability * 1.5) }}
+          style={{ opacity: videoSrc ? 0 : Math.min(1, stability * 1.5) }}
         >
-          {stability > 0.7 && (
+          {!videoSrc && stability > 0.7 && (
             <div className={styles.clarityText}>
               <div className={styles.clarityPulse}>SIGNAL COHERENT</div>
             </div>
           )}
-          {stability > 0.3 && stability <= 0.7 && (
+          {!videoSrc && stability > 0.3 && stability <= 0.7 && (
             <div className={styles.clarityText}>
               <div style={{ opacity: 0.5 }}>signal resolving...</div>
             </div>
           )}
         </div>
-        {/* Scanlines */}
-        <div className={styles.scanlines} style={{ opacity: Math.max(0.1, 1 - stability) }} />
+        {/* Scanlines — persistent but fade as signal clears */}
+        <div className={styles.scanlines} style={{ opacity: Math.max(0.05, 1 - stability) }} />
+        {/* Glitch bar — horizontal displacement artifact when stability is low */}
+        {videoSrc && stability < 0.5 && (
+          <div
+            className={styles.glitchBar}
+            style={{
+              top: `${Math.random() * 100}%`,
+              opacity: Math.max(0, 0.5 - stability),
+            }}
+          />
+        )}
       </div>
 
       {/* The sync bar */}
