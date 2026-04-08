@@ -41,6 +41,8 @@ interface AppManifest {
   lockMessage?: string;
   hasNotification?: boolean;
   syncGated?: number; // sync threshold to unlock
+  /** S³ tier — triggers particle-style icon rendering */
+  tier?: 'gener8' | 'daw' | 'vid' | 'styleforge';
 }
 
 interface WindowState {
@@ -118,13 +120,17 @@ const AvatarContext = createContext<AvatarState | null>(null);
    ═══════════════════════════════════════════════════════════════ */
 
 const APP_REGISTRY: AppManifest[] = [
-  // ── Standard OS — your normal desktop stuff (top of grid) ──
+  // ── S³ Suite — particle-style branded icons (top of grid) ──
+  { id: 'soundwave',     label: 'Gener8',                icon: '🎵', minWidth: 480, minHeight: 600, defaultWidth: 520, defaultHeight: 640, state: 'available', tier: 'gener8' },
+  { id: 's3-daw',        label: 'DAW',                   icon: '🎛️', minWidth: 480, minHeight: 600, defaultWidth: 520, defaultHeight: 640, state: 'locked', tier: 'daw', lockMessage: 'S³ DAW — Coming Soon to Everywear' },
+  { id: 's3-vid',        label: 'Vid',                   icon: '🎬', minWidth: 480, minHeight: 600, defaultWidth: 520, defaultHeight: 640, state: 'locked', tier: 'vid', lockMessage: 'S³ Vid — Coming Soon to Everywear' },
+  { id: 'library',       label: 'Strands Library',       icon: '📚', minWidth: 400, minHeight: 500, defaultWidth: 500, defaultHeight: 600, state: 'available' },
+
+  // ── Standard OS ──
   { id: 'my-computer',   label: 'My Computer',         icon: '💻', minWidth: 400, minHeight: 360, defaultWidth: 480, defaultHeight: 420, state: 'available' },
-  { id: 'documents',     label: 'Documents',            icon: '📄', minWidth: 360, minHeight: 440, defaultWidth: 420, defaultHeight: 480, state: 'available' },
   { id: 'my-pictures',   label: 'My Pictures',          icon: '🖼️', minWidth: 360, minHeight: 340, defaultWidth: 420, defaultHeight: 400, state: 'available' },
   { id: 'my-videos',     label: 'My Videos',            icon: '🎬', minWidth: 360, minHeight: 340, defaultWidth: 420, defaultHeight: 400, state: 'available' },
   { id: 'music-player',  label: 'Music Player',          icon: '🎶', minWidth: 300, minHeight: 360, defaultWidth: 380, defaultHeight: 520, state: 'available' },
-  { id: 'soundwave',     label: 'SoundWave',             icon: '🎵', minWidth: 480, minHeight: 600, defaultWidth: 520, defaultHeight: 640, state: 'available' },
 
   // ── Strands installed apps — available ──
   { id: 'signal-reg',    label: 'Signal Reg',           icon: '📡', minWidth: 320, minHeight: 400, defaultWidth: 380, defaultHeight: 460, state: 'available' },
@@ -884,15 +890,19 @@ function AppContent({ appId }: { appId: string }) {
       );
 
     case 'documents':
+    case 'library':
       return (
         <div className={styles.appBody}>
-          <div className={styles.appHeader}>DOCUMENTS</div>
+          <div className={styles.appHeader}>STRANDS LIBRARY</div>
+          <div style={{ padding: '8px 12px', fontSize: '10px', color: 'rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            Songs, stems, videos — shared across all S³ apps
+          </div>
           <div className={styles.fileList}>
-            <div className={styles.fileItem}><span>📁</span> Personal</div>
-            <div className={styles.fileItem}><span>📁</span> Work</div>
+            <div className={styles.fileItem}><span>🎵</span> Generated Songs</div>
+            <div className={styles.fileItem}><span>🎛️</span> Stem Separations</div>
+            <div className={styles.fileItem}><span>🎬</span> Music Videos</div>
+            <div className={styles.fileItem}><span>📁</span> Style Patches</div>
             <div className={styles.fileItem}><span>📁</span> Signal Transcripts</div>
-            <div className={styles.fileItem}><span>📄</span> README_strands.txt</div>
-            <div className={styles.fileItem}><span>📄</span> bridge_calibration_notes.txt</div>
             <div className={styles.fileItemDim}><span>📄</span> ▓▓▓_recovered_fragment_01.sig</div>
             <div className={styles.fileItemDim}><span>🔒</span> classified_sovcorp_memo.enc — <em>Decryption pending</em></div>
           </div>
@@ -1386,6 +1396,110 @@ function Window({ win, isActive, onFocus, onClose, onMinimize, onMaximize, onMov
    DESKTOP ICON — with notification popup on locked
    ═══════════════════════════════════════════════════════════════ */
 
+/* ═══════════════════════════════════════════════════════════════
+   S³ PARTICLE ICON — Canvas-rendered particle field with "S³" text
+   Used for S³ tier apps (Gener8, DAW, Vid, StyleForge)
+   ═══════════════════════════════════════════════════════════════ */
+
+function S3ParticleIcon({ tier }: { tier: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const SIZE = 112;
+    canvas.width = SIZE;
+    canvas.height = SIZE;
+
+    const tierColors: Record<string, [number, number, number]> = {
+      gener8: [0, 194, 255],
+      daw: [168, 85, 247],
+      vid: [240, 0, 184],
+      styleforge: [245, 158, 11],
+    };
+    const rgb = tierColors[tier] || tierColors.gener8;
+
+    interface P { x: number; y: number; s: number; a: number; vx: number; vy: number; d: number; }
+    const particles: P[] = [];
+    for (let i = 0; i < 40; i++) {
+      particles.push({
+        x: Math.random() * SIZE, y: Math.random() * SIZE,
+        s: Math.random() * 1.5 + 0.4, a: Math.random() * 0.4 + 0.1,
+        vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+        d: Math.random() * Math.PI * 2,
+      });
+    }
+
+    let t = 0;
+    function animate() {
+      t += 0.02;
+      ctx!.clearRect(0, 0, SIZE, SIZE);
+      ctx!.save();
+      ctx!.beginPath();
+      ctx!.roundRect(0, 0, SIZE, SIZE, 24);
+      ctx!.clip();
+
+      ctx!.fillStyle = '#0a0a12';
+      ctx!.fillRect(0, 0, SIZE, SIZE);
+
+      const grad = ctx!.createRadialGradient(SIZE / 2, SIZE / 2, 0, SIZE / 2, SIZE / 2, SIZE * 0.6);
+      grad.addColorStop(0, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.12)`);
+      grad.addColorStop(1, 'transparent');
+      ctx!.fillStyle = grad;
+      ctx!.fillRect(0, 0, SIZE, SIZE);
+
+      for (const p of particles) {
+        p.x += p.vx + Math.sin(t + p.d) * 0.1;
+        p.y += p.vy + Math.cos(t * 0.8 + p.d) * 0.1;
+        if (p.x < 0) p.x = SIZE; if (p.x > SIZE) p.x = 0;
+        if (p.y < 0) p.y = SIZE; if (p.y > SIZE) p.y = 0;
+        const pa = p.a * (0.6 + 0.4 * Math.sin(t * 2 + p.d));
+        ctx!.beginPath(); ctx!.arc(p.x, p.y, p.s * 3, 0, Math.PI * 2);
+        ctx!.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${pa * 0.2})`; ctx!.fill();
+        ctx!.beginPath(); ctx!.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+        ctx!.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${pa})`; ctx!.fill();
+      }
+
+      ctx!.lineWidth = 0.3;
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
+          if (dx * dx + dy * dy < 900) {
+            ctx!.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.06)`;
+            ctx!.beginPath(); ctx!.moveTo(particles[i].x, particles[i].y);
+            ctx!.lineTo(particles[j].x, particles[j].y); ctx!.stroke();
+          }
+        }
+      }
+
+      ctx!.font = '700 32px "Inter", -apple-system, sans-serif';
+      ctx!.textAlign = 'center'; ctx!.textBaseline = 'middle';
+      ctx!.shadowColor = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+      ctx!.shadowBlur = 12;
+      ctx!.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.8)`;
+      ctx!.fillText('S³', SIZE / 2, SIZE / 2);
+      ctx!.shadowBlur = 0;
+      ctx!.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx!.fillText('S³', SIZE / 2, SIZE / 2);
+
+      ctx!.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.15)`;
+      ctx!.lineWidth = 1;
+      ctx!.beginPath(); ctx!.roundRect(0.5, 0.5, SIZE - 1, SIZE - 1, 24); ctx!.stroke();
+      ctx!.restore();
+
+      animRef.current = requestAnimationFrame(animate);
+    }
+    animate();
+    return () => cancelAnimationFrame(animRef.current);
+  }, [tier]);
+
+  return <canvas ref={canvasRef} style={{ width: 56, height: 56, imageRendering: 'auto' }} />;
+}
+
 function DesktopIcon({ app, onOpen, onLockedClick }: { app: AppManifest; onOpen: () => void; onLockedClick: (msg: string) => void }) {
   if (app.state === 'hidden') {
     return (
@@ -1411,10 +1525,17 @@ function DesktopIcon({ app, onOpen, onLockedClick }: { app: AppManifest; onOpen:
         if (isLocked) onLockedClick(app.lockMessage || 'Access denied');
       }}
     >
-      <div className={styles.iconGlyph}>
-        {app.icon}
-        {isLocked && <div className={styles.lockOverlay}>🔒</div>}
-      </div>
+      {app.tier ? (
+        <div className={styles.iconGlyph} style={{ background: 'none', border: 'none' }}>
+          <S3ParticleIcon tier={app.tier} />
+          {isLocked && <div className={styles.lockOverlay}>🔒</div>}
+        </div>
+      ) : (
+        <div className={styles.iconGlyph}>
+          {app.icon}
+          {isLocked && <div className={styles.lockOverlay}>🔒</div>}
+        </div>
+      )}
       <div className={styles.iconLabel}>{app.label}</div>
       {app.hasNotification && <div className={styles.notificationDot} />}
     </button>
@@ -1538,7 +1659,7 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
    ═══════════════════════════════════════════════════════════════ */
 
 // Standard OS app IDs for filtering (stable constant)
-const STANDARD_IDS: string[] = ['my-computer','documents','my-pictures','my-videos','music-player'];
+const STANDARD_IDS: string[] = ['my-computer','my-pictures','my-videos','music-player'];
 
 export default function DemoOSPage() {
   const [booted, setBooted] = useState(false);
