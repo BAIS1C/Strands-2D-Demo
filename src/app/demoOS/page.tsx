@@ -401,7 +401,7 @@ function SoundWaveLauncher() {
           </button>
         </div>
         <iframe
-          src="/stepstudio/app"
+          src="/stepstudio/app?embed=gener8"
           title="S³ Gener8 — Music Studio"
           style={{ flex: 1, width: '100%', border: 'none', background: '#0a0a0f', borderRadius: '0 0 4px 4px' }}
           sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
@@ -434,7 +434,7 @@ function SoundWaveLauncher() {
           ▶ RUN IN WINDOW
         </button>
         <button
-          onClick={() => window.open('/stepstudio/app', '_blank')}
+          onClick={() => window.open('/stepstudio/app?embed=gener8', '_blank')}
           style={{
             padding: '12px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)',
             background: 'rgba(255,255,255,0.04)', color: '#a0aec0', cursor: 'pointer',
