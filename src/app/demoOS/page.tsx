@@ -145,7 +145,7 @@ const APP_REGISTRY: AppManifest[] = [
   { id: 'avatar-creator', label: 'Avatar Creator', icon: '🧬', minWidth: 520, minHeight: 600, defaultWidth: 680, defaultHeight: 720, state: 'available' },
 
   // ── Sync-gated — show progress bar until threshold ──
-  { id: 'signal-training', label: 'Signal Training',    icon: '🎯', minWidth: 640, minHeight: 480, defaultWidth: 800, defaultHeight: 600, state: 'available' },
+  { id: 'signal-training', label: 'Signal Training',    icon: '🎯', minWidth: 640, minHeight: 480, defaultWidth: 800, defaultHeight: 600, state: 'locked', lockMessage: 'Signal Training — Coming Soon' },
   { id: 'arcade-2042',   label: 'Arcade 2042',          icon: '🕹️', minWidth: 480, minHeight: 620, defaultWidth: 500, defaultHeight: 680, state: 'available' },
   { id: 'holo-lock',     label: 'Circuit Sync',          icon: '🔓', minWidth: 520, minHeight: 500, defaultWidth: 540, defaultHeight: 540, state: 'available' },
 
@@ -401,8 +401,8 @@ function SoundWaveLauncher() {
           </button>
         </div>
         <iframe
-          src="/stepstudio/"
-          title="SoundWave — ACE Step Studio"
+          src="/stepstudio/app"
+          title="S³ Gener8 — Music Studio"
           style={{ flex: 1, width: '100%', border: 'none', background: '#0a0a0f', borderRadius: '0 0 4px 4px' }}
           sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
         />
@@ -414,10 +414,10 @@ function SoundWaveLauncher() {
     <div className={styles.appBody} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, padding: 32 }}>
       <div style={{ fontSize: '3rem', lineHeight: 1 }}>🎵</div>
       <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: '1.1rem', color: '#00C2FF', textAlign: 'center', letterSpacing: 2 }}>
-        STRANDS SOUNDWAVE
+        S&#179; GENER8
       </div>
       <div style={{ fontSize: '0.78rem', color: '#a0aec0', textAlign: 'center', maxWidth: 320, lineHeight: 1.5 }}>
-        AI Music Studio powered by ACE-Step 1.5. Create, remix, and generate tracks with text prompts.
+        Your music. Your machine. Your rules. AI music generation powered by ACE-Step 1.5.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 280, marginTop: 8 }}>
         <button
@@ -434,7 +434,7 @@ function SoundWaveLauncher() {
           ▶ RUN IN WINDOW
         </button>
         <button
-          onClick={() => window.open('/stepstudio/', '_blank')}
+          onClick={() => window.open('/stepstudio/app', '_blank')}
           style={{
             padding: '12px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)',
             background: 'rgba(255,255,255,0.04)', color: '#a0aec0', cursor: 'pointer',
@@ -1397,11 +1397,43 @@ function Window({ win, isActive, onFocus, onClose, onMinimize, onMaximize, onMov
    ═══════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════
-   S³ PARTICLE ICON — Canvas-rendered particle field with "S³" text
-   Used for S³ tier apps (Gener8, DAW, Vid, StyleForge)
+   PARTICLE ICON — Canvas-rendered 3D particle field
+   S³ tier apps: show "S³" text with tier color
+   All other apps: show emoji glyph with per-app color
    ═══════════════════════════════════════════════════════════════ */
 
-function S3ParticleIcon({ tier }: { tier: string }) {
+const APP_ICON_COLORS: Record<string, [number, number, number]> = {
+  // S³ Suite
+  gener8:     [0, 194, 255],
+  daw:        [168, 85, 247],
+  vid:        [240, 0, 184],
+  styleforge: [245, 158, 11],
+  // Standard OS
+  'my-computer':    [100, 160, 230],
+  'my-pictures':    [220, 140, 60],
+  'my-videos':      [200, 80, 160],
+  'music-player':   [80, 200, 160],
+  // Strands apps
+  'library':        [0, 194, 255],
+  'signal-reg':     [60, 180, 220],
+  'messages':       [100, 220, 140],
+  'bridge-app':     [160, 120, 240],
+  'codex':          [200, 170, 80],
+  'signal-monitor': [80, 200, 200],
+  'mymories':       [220, 100, 200],
+  'myconsent':      [100, 180, 100],
+  'avatar-creator': [0, 220, 180],
+  // Sync-gated / locked
+  'signal-training':[220, 80, 80],
+  'arcade-2042':    [255, 140, 0],
+  'holo-lock':      [140, 200, 255],
+  'voice-sync':     [180, 100, 220],
+  'cipher-tool':    [200, 60, 60],
+  'trading-post':   [240, 200, 60],
+  'signal-rush':    [255, 100, 60],
+};
+
+function ParticleIcon({ appId, tier, emoji }: { appId: string; tier?: string; emoji: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
 
@@ -1415,17 +1447,13 @@ function S3ParticleIcon({ tier }: { tier: string }) {
     canvas.width = SIZE;
     canvas.height = SIZE;
 
-    const tierColors: Record<string, [number, number, number]> = {
-      gener8: [0, 194, 255],
-      daw: [168, 85, 247],
-      vid: [240, 0, 184],
-      styleforge: [245, 158, 11],
-    };
-    const rgb = tierColors[tier] || tierColors.gener8;
+    const isS3 = !!tier;
+    const rgb = (tier ? APP_ICON_COLORS[tier] : APP_ICON_COLORS[appId]) || [120, 140, 180];
+    const particleCount = isS3 ? 40 : 28;
 
     interface P { x: number; y: number; s: number; a: number; vx: number; vy: number; d: number; }
     const particles: P[] = [];
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < particleCount; i++) {
       particles.push({
         x: Math.random() * SIZE, y: Math.random() * SIZE,
         s: Math.random() * 1.5 + 0.4, a: Math.random() * 0.4 + 0.1,
@@ -1443,15 +1471,18 @@ function S3ParticleIcon({ tier }: { tier: string }) {
       ctx!.roundRect(0, 0, SIZE, SIZE, 24);
       ctx!.clip();
 
+      // Background
       ctx!.fillStyle = '#0a0a12';
       ctx!.fillRect(0, 0, SIZE, SIZE);
 
+      // Radial glow
       const grad = ctx!.createRadialGradient(SIZE / 2, SIZE / 2, 0, SIZE / 2, SIZE / 2, SIZE * 0.6);
-      grad.addColorStop(0, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.12)`);
+      grad.addColorStop(0, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${isS3 ? 0.12 : 0.08})`);
       grad.addColorStop(1, 'transparent');
       ctx!.fillStyle = grad;
       ctx!.fillRect(0, 0, SIZE, SIZE);
 
+      // Particles
       for (const p of particles) {
         p.x += p.vx + Math.sin(t + p.d) * 0.1;
         p.y += p.vy + Math.cos(t * 0.8 + p.d) * 0.1;
@@ -1464,6 +1495,7 @@ function S3ParticleIcon({ tier }: { tier: string }) {
         ctx!.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${pa})`; ctx!.fill();
       }
 
+      // Connection lines
       ctx!.lineWidth = 0.3;
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
@@ -1476,16 +1508,30 @@ function S3ParticleIcon({ tier }: { tier: string }) {
         }
       }
 
-      ctx!.font = '700 32px "Inter", -apple-system, sans-serif';
-      ctx!.textAlign = 'center'; ctx!.textBaseline = 'middle';
-      ctx!.shadowColor = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
-      ctx!.shadowBlur = 12;
-      ctx!.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.8)`;
-      ctx!.fillText('S³', SIZE / 2, SIZE / 2);
-      ctx!.shadowBlur = 0;
-      ctx!.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx!.fillText('S³', SIZE / 2, SIZE / 2);
+      // Centre glyph
+      if (isS3) {
+        // S³ branded text
+        ctx!.font = '700 32px "Inter", -apple-system, sans-serif';
+        ctx!.textAlign = 'center'; ctx!.textBaseline = 'middle';
+        ctx!.shadowColor = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+        ctx!.shadowBlur = 12;
+        ctx!.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.8)`;
+        ctx!.fillText('S\u00B3', SIZE / 2, SIZE / 2);
+        ctx!.shadowBlur = 0;
+        ctx!.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx!.fillText('S\u00B3', SIZE / 2, SIZE / 2);
+      } else {
+        // Emoji glyph with glow
+        ctx!.font = '36px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+        ctx!.textAlign = 'center'; ctx!.textBaseline = 'middle';
+        ctx!.shadowColor = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+        ctx!.shadowBlur = 10;
+        ctx!.fillText(emoji, SIZE / 2, SIZE / 2);
+        ctx!.shadowBlur = 0;
+        ctx!.fillText(emoji, SIZE / 2, SIZE / 2);
+      }
 
+      // Border
       ctx!.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.15)`;
       ctx!.lineWidth = 1;
       ctx!.beginPath(); ctx!.roundRect(0.5, 0.5, SIZE - 1, SIZE - 1, 24); ctx!.stroke();
@@ -1495,7 +1541,7 @@ function S3ParticleIcon({ tier }: { tier: string }) {
     }
     animate();
     return () => cancelAnimationFrame(animRef.current);
-  }, [tier]);
+  }, [appId, tier, emoji]);
 
   return <canvas ref={canvasRef} style={{ width: 56, height: 56, imageRendering: 'auto' }} />;
 }
@@ -1525,17 +1571,10 @@ function DesktopIcon({ app, onOpen, onLockedClick }: { app: AppManifest; onOpen:
         if (isLocked) onLockedClick(app.lockMessage || 'Access denied');
       }}
     >
-      {app.tier ? (
-        <div className={styles.iconGlyph} style={{ background: 'none', border: 'none' }}>
-          <S3ParticleIcon tier={app.tier} />
-          {isLocked && <div className={styles.lockOverlay}>🔒</div>}
-        </div>
-      ) : (
-        <div className={styles.iconGlyph}>
-          {app.icon}
-          {isLocked && <div className={styles.lockOverlay}>🔒</div>}
-        </div>
-      )}
+      <div className={styles.iconGlyph} style={{ background: 'none', border: 'none' }}>
+        <ParticleIcon appId={app.id} tier={app.tier} emoji={app.icon} />
+        {isLocked && <div className={styles.lockOverlay}>🔒</div>}
+      </div>
       <div className={styles.iconLabel}>{app.label}</div>
       {app.hasNotification && <div className={styles.notificationDot} />}
     </button>
