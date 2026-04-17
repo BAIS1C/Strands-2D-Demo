@@ -388,7 +388,7 @@ function SoundWaveLauncher() {
             color: '#a0aec0', flexShrink: 0,
           }}
         >
-          <span>🎵 Strands SoundWave — ACE Step Studio</span>
+          <span>🎵 S³ Gener8 — AI Music Studio</span>
           <button
             onClick={() => setMode('choose')}
             style={{

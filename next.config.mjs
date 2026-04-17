@@ -8,14 +8,34 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   async rewrites() {
-    return [
-      // StepStudio SPA fallback — all /stepstudio/* sub-routes serve the static index.html
-      // (assets like /stepstudio/assets/*.js are served directly from public/ first)
-      {
-        source: '/stepstudio/:path((?!assets/).*)',
-        destination: '/stepstudio/index.html',
-      },
-    ];
+    return {
+      beforeFiles: [
+        // StepStudio SPA — /stepstudio/app, /stepstudio/login etc. all serve index.html
+        // Static assets (/stepstudio/assets/*) are matched by filesystem first via afterFiles
+        {
+          source: '/stepstudio/app',
+          destination: '/stepstudio/index.html',
+        },
+        {
+          source: '/stepstudio/app/:path*',
+          destination: '/stepstudio/index.html',
+        },
+        {
+          source: '/stepstudio/login',
+          destination: '/stepstudio/index.html',
+        },
+        {
+          source: '/stepstudio/signup',
+          destination: '/stepstudio/index.html',
+        },
+        {
+          source: '/stepstudio/song/:path*',
+          destination: '/stepstudio/index.html',
+        },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
   },
 };
 
