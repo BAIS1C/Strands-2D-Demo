@@ -8,23 +8,14 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   async rewrites() {
-    const studioUrl = process.env.SOUNDWAVE_STUDIO_URL; // e.g. https://soundwave.strandsnation.xyz
-    const apiUrl = process.env.SOUNDWAVE_API_URL;       // e.g. https://soundwave-api.strandsnation.xyz
-
-    const rules = [];
-
-    // StepStudio UI — iframe at /stepstudio/ proxies to the full UI tunnel
-    if (studioUrl) {
-      rules.push({
-        source: '/stepstudio/:path*',
-        destination: `${studioUrl}/:path*`,
-      });
-    }
-
-    // API proxy handled by /app/api/soundwave/[...path]/route.ts (edge runtime)
-    // Do NOT add a rewrite here — it conflicts with the route handler
-
-    return rules;
+    return [
+      // StepStudio SPA fallback — all /stepstudio/* sub-routes serve the static index.html
+      // (assets like /stepstudio/assets/*.js are served directly from public/ first)
+      {
+        source: '/stepstudio/:path((?!assets/).*)',
+        destination: '/stepstudio/index.html',
+      },
+    ];
   },
 };
 
