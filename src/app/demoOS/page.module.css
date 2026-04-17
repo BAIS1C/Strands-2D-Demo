@@ -227,8 +227,10 @@
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   width: 84px;
-  height: 84px;
-  justify-content: center;
+  height: 96px;
+  justify-content: flex-start;
+  padding-top: 6px;
+  gap: 4px;
 }
 
 .desktopIcon:hover {

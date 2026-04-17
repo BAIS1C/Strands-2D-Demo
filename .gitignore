@@ -42,3 +42,5 @@ next-env.d.ts
 
 # drive temp
 .tmp.driveupload/
+
+.env*.local
