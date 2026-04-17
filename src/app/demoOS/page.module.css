@@ -87,10 +87,11 @@
   background: repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 2px,
-    rgba(255, 51, 102, 0.015) 2px,
-    rgba(255, 51, 102, 0.015) 4px
+    transparent 3px,
+    rgba(255, 51, 102, 0.008) 3px,
+    rgba(255, 51, 102, 0.008) 6px
   );
+  opacity: 0.4;
 }
 
 /* ─── DESKTOP SURFACE (background) ─── */
@@ -143,11 +144,12 @@
   background: repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 2px,
-    rgba(0, 194, 255, 0.012) 2px,
-    rgba(0, 194, 255, 0.012) 4px
+    transparent 3px,
+    rgba(0, 194, 255, 0.005) 3px,
+    rgba(0, 194, 255, 0.005) 6px
   );
-  animation: scanFlicker 4s infinite;
+  animation: scanFlicker 6s infinite;
+  opacity: 0.5;
 }
 
 @keyframes scanFlicker {
@@ -182,11 +184,12 @@
   bottom: 0;
   z-index: 1;
   padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 2px 2px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(auto-fill, 96px);
+  grid-auto-columns: 84px;
+  gap: 2px 4px;
+  align-content: start;
   max-height: 100%;
   width: auto;
 }

@@ -2001,32 +2001,22 @@ export default function DemoOSPage() {
           <div className={styles.workspace}>
             {/* Icon Grid — free-form desktop layout */}
             <div className={styles.iconGrid}>
-              {/* Standard OS apps — top left */}
-              <div className={styles.iconGroup}>
-                {standardApps.map(app => (
-                  <DesktopIcon key={app.id} app={app} onOpen={() => openWindow(app)} onLockedClick={showToast} />
-                ))}
-              </div>
-              {/* Separator */}
-              <div className={styles.iconSep} />
+              {/* Standard OS apps */}
+              {standardApps.map(app => (
+                <DesktopIcon key={app.id} app={app} onOpen={() => openWindow(app)} onLockedClick={showToast} />
+              ))}
               {/* Strands apps */}
-              <div className={styles.iconGroup}>
-                {strandsApps.map(app => (
-                  <DesktopIcon key={app.id} app={app} onOpen={() => openWindow(app)} onLockedClick={showToast} />
-                ))}
-              </div>
-              {/* Hidden row */}
-              <div className={styles.iconSep} />
-              <div className={styles.iconGroupHidden}>
-                {hiddenApps.map(app => (
-                  <DesktopIcon key={app.id} app={app} onOpen={() => {}} onLockedClick={showToast} />
-                ))}
-              </div>
+              {strandsApps.map(app => (
+                <DesktopIcon key={app.id} app={app} onOpen={() => openWindow(app)} onLockedClick={showToast} />
+              ))}
+              {/* Hidden apps */}
+              {hiddenApps.map(app => (
+                <DesktopIcon key={app.id} app={app} onOpen={() => {}} onLockedClick={showToast} />
+              ))}
 
               {/* Quest dynamic files — materialise during narrative */}
               {desktopFiles.length > 0 && (
                 <>
-                  <div className={styles.iconSep} />
                   <div className={styles.iconGroup}>
                     {desktopFiles.map((file, i) => (
                       <div
