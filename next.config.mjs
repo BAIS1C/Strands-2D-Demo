@@ -21,13 +21,8 @@ const nextConfig = {
       });
     }
 
-    // Direct API proxy (fallback — the /api/soundwave route handler is preferred)
-    if (apiUrl) {
-      rules.push({
-        source: '/api/soundwave/:path*',
-        destination: `${apiUrl}/:path*`,
-      });
-    }
+    // API proxy handled by /app/api/soundwave/[...path]/route.ts (edge runtime)
+    // Do NOT add a rewrite here — it conflicts with the route handler
 
     return rules;
   },

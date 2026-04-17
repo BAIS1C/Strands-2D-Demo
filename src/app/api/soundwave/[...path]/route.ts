@@ -14,6 +14,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+export const runtime = 'edge';
+
 const API_URL = process.env.SOUNDWAVE_API_URL;
 const API_KEY = process.env.SOUNDWAVE_API_KEY;
 
