@@ -4,6 +4,7 @@ import CursorGlow from '@/components/CursorGlow/CursorGlow';
 import Scanlines from '@/components/Scanlines/Scanlines';
 import CircuitBg from '@/components/CircuitBg/CircuitBg';
 import '@/styles/tokens.css';
+import '@/styles/skins.css';
 import '@/styles/global.css';
 
 export const metadata: Metadata = {

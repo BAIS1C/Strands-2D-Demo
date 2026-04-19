@@ -1,0 +1,139 @@
+/* ═══════════════════════════════════════════════════════════════
+   WINDOW — floating panel frame with drag + 8 resize handles
+   ═══════════════════════════════════════════════════════════════ */
+
+.window {
+  position: absolute;
+  background: var(--c-surface, rgba(10, 11, 13, 0.92));
+  /* Canonical border — drop-shadow traces the clipped polygon silhouette */
+  border: none;
+  display: flex;
+  flex-direction: column;
+  box-shadow: inset 0 0 0 1px var(--c-border, rgba(0, 194, 255, 0.1));
+  filter: drop-shadow(0 4px 32px rgba(0, 0, 0, 0.5));
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  /* Canonical TR+BL directional corner cut — EWDS window grammar */
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--cut-win, 14px)) 0,
+    100% var(--cut-win, 14px),
+    100% 100%,
+    var(--cut-win, 14px) 100%,
+    0 calc(100% - var(--cut-win, 14px))
+  );
+}
+
+.windowActive {
+  box-shadow: inset 0 0 0 1px var(--c-accent, rgba(0, 194, 255, 0.4));
+  filter: drop-shadow(0 8px 48px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 16px var(--a-accent-hover, rgba(0, 194, 255, 0.15)));
+}
+
+/* Terminal skin disables the cuts (per canon --cut-win: 0) so this reads as square */
+:global([data-theme="c"]) .window {
+  clip-path: none;
+}
+
+/* ─── TITLE BAR ─── */
+
+.titleBar {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 10px;
+  background: rgba(15, 15, 25, 0.6);
+  border-bottom: 1px solid rgba(0, 194, 255, 0.06);
+  cursor: grab;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.titleBar:active {
+  cursor: grabbing;
+}
+
+.titleIcon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.titleText {
+  font: 600 10px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 1px;
+  color: var(--c-sub, #A0AEC0);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TRAFFIC LIGHTS — Mac-style close/min/max, leading the titlebar
+   ═══════════════════════════════════════════════════════════════ */
+
+.windowControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-right: 4px;
+  margin-right: 2px;
+}
+
+.winBtn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+  border: none;
+  padding: 0;
+  position: relative;
+}
+
+.winBtn:hover { filter: brightness(1.15); transform: scale(1.08); }
+.winBtn:active { transform: scale(0.95); }
+
+/* Close — red, min — yellow, max — green. Canonical Mac order. */
+.winBtnClose { background: #FF5F57; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.2); }
+.winBtnMin   { background: #FFBD2E; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.2); }
+.winBtnMax   { background: #28C840; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.2); }
+
+/* Inactive windows: mute the lights to a neutral grey so only the focused window screams */
+.window:not(.windowActive) .winBtn {
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: none;
+}
+
+/* Terminal skin — mono amber, the three lights become functional dim/half/bright amber */
+:global([data-theme="c"]) .winBtnClose { background: #FF5F57; }
+:global([data-theme="c"]) .winBtnMin   { background: #FFBD2E; }
+:global([data-theme="c"]) .winBtnMax   { background: #28C840; }
+
+/* ─── WINDOW CONTENT ─── */
+
+.windowContent {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  /* Prevent scroll chaining — content scrolls stay inside the window */
+  overscroll-behavior: contain;
+}
+
+/* ─── RESIZE HANDLES ─── */
+
+.resizeHandle {
+  position: absolute;
+  z-index: 10;
+}
+
+.resize_n  { top: -3px;   left: 12px;  right: 12px;  height: 6px;  cursor: n-resize; }
+.resize_s  { bottom: -3px; left: 12px; right: 12px;  height: 6px;  cursor: s-resize; }
+.resize_e  { top: 12px;   right: -3px; bottom: 12px; width: 6px;   cursor: e-resize; }
+.resize_w  { top: 12px;   left: -3px;  bottom: 12px; width: 6px;   cursor: w-resize; }
+.resize_ne { top: -3px;   right: -3px; width: 14px;  height: 14px; cursor: ne-resize; }
+.resize_nw { top: -3px;   left: -3px;  width: 14px;  height: 14px; cursor: nw-resize; }
+.resize_se { bottom: -3px; right: -3px; width: 14px; height: 14px; cursor: se-resize; }
+.resize_sw { bottom: -3px; left: -3px;  width: 14px; height: 14px; cursor: sw-resize; }

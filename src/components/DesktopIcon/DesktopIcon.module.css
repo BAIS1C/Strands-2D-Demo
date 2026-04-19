@@ -1,0 +1,130 @@
+/* ═══════════════════════════════════════════════════════════════
+   DESKTOP ICON — static app tile on the desktop grid
+   ═══════════════════════════════════════════════════════════════ */
+
+.desktopIcon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  width: 84px;
+  height: 96px;
+  justify-content: flex-start;
+}
+
+.desktopIcon:hover {
+  background: rgba(0, 194, 255, 0.06);
+  border-color: rgba(0, 194, 255, 0.12);
+  box-shadow: 0 0 20px rgba(0, 194, 255, 0.05);
+}
+
+.desktopIcon:active {
+  transform: scale(0.94);
+}
+
+.iconGlyph {
+  font-size: 30px;
+  line-height: 1;
+  position: relative;
+  filter: drop-shadow(0 0 6px rgba(0, 194, 255, 0.2));
+  background: none;
+  border: none;
+}
+
+.lockOverlay {
+  position: absolute;
+  bottom: -4px;
+  right: -8px;
+  font-size: 12px;
+}
+
+.iconLabel {
+  font: 600 8px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 0.5px;
+  color: var(--c-sub, #A0AEC0);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 76px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notificationDot {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-pink, #F000B8);
+  box-shadow: 0 0 8px rgba(240, 0, 184, 0.6);
+  animation: notifPulse 2s ease-in-out infinite;
+}
+
+@keyframes notifPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.4); }
+}
+
+/* ─── Locked variant ─── */
+
+.desktopIconLocked {
+  opacity: 0.3;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+
+.desktopIconLocked:hover {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.04);
+  box-shadow: none;
+}
+
+/* ─── Hidden variant (dashed slot) ─── */
+
+.iconSlotHidden {
+  width: 84px;
+  height: 84px;
+  border: 1px dashed rgba(0, 194, 255, 0.06);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  opacity: 0.5;
+}
+
+.glitchChar {
+  font: 700 18px var(--font-display, 'Orbitron', monospace);
+  color: rgba(0, 194, 255, 0.08);
+  animation: iconGlitchFlicker 8s step-end infinite;
+}
+
+@keyframes iconGlitchFlicker {
+  0%, 90% { opacity: 0; }
+  91%     { opacity: 1; color: rgba(240, 0, 184, 0.4); }
+  93%     { opacity: 0; }
+  95%     { opacity: 1; color: rgba(0, 194, 255, 0.3); transform: translate(2px, -1px); }
+  97%     { opacity: 0; transform: translate(0); }
+}
+
+/* ─── Responsive sizing ─── */
+
+@media (max-width: 768px) {
+  .desktopIcon    { width: 76px; height: 76px; }
+  .iconSlotHidden { width: 76px; height: 76px; }
+  .iconGlyph      { font-size: 26px; }
+}
+
+@media (max-width: 480px) {
+  .desktopIcon    { width: 68px; height: 68px; }
+  .iconSlotHidden { width: 68px; height: 68px; }
+}

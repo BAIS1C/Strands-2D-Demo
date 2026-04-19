@@ -1,0 +1,78 @@
+/* ═══════════════════════════════════════════════════════════════
+   QUEST FILE ICON — dynamic tile for narrative-dropped files
+   ═══════════════════════════════════════════════════════════════ */
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  width: 84px;
+  height: 96px;
+  justify-content: flex-start;
+  animation: questFileFadeIn 0.5s ease both;
+}
+
+.tile:hover {
+  background: rgba(0, 194, 255, 0.06);
+  border-color: rgba(0, 194, 255, 0.12);
+  box-shadow: 0 0 20px rgba(0, 194, 255, 0.05);
+}
+
+.tile:active {
+  transform: scale(0.94);
+}
+
+.glyph {
+  font-size: 30px;
+  line-height: 1;
+  position: relative;
+  filter: drop-shadow(0 0 6px rgba(0, 194, 255, 0.2));
+}
+
+.label {
+  font: 600 7px var(--font-display, 'Orbitron', monospace);
+  letter-spacing: 0.5px;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 76px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--c-pink, #F000B8);
+  text-shadow: 0 0 6px rgba(240, 0, 184, 0.4);
+}
+
+.labelRenamed {
+  color: var(--c-accent, #00C2FF);
+  text-shadow: none;
+}
+
+.pulseDot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-pink, #F000B8);
+  box-shadow: 0 0 6px rgba(240, 0, 184, 0.6);
+  animation: questFilePulse 2s ease-in-out infinite;
+}
+
+@keyframes questFilePulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.4); }
+}
+
+@keyframes questFileFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

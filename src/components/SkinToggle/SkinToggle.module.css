@@ -1,0 +1,95 @@
+/* ═══════════════════════════════════════════════════════════════
+   SKIN TOGGLE — pill-strip theme switcher
+   TR+BL cut on the container and each active button (when cuts enabled)
+   ═══════════════════════════════════════════════════════════════ */
+
+.switcher {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--c-surface);
+  box-shadow: inset 0 0 0 1px var(--c-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  clip-path: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
+}
+
+[data-theme="c"] .switcher {
+  clip-path: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  box-shadow: inset 0 0 0 1px transparent;
+  color: var(--c-sub);
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .15s var(--ease-out, ease);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--cut-sm, 6px)) 0,
+    100% var(--cut-sm, 6px),
+    100% 100%,
+    var(--cut-sm, 6px) 100%,
+    0 calc(100% - var(--cut-sm, 6px))
+  );
+}
+
+[data-theme="c"] .btn {
+  clip-path: none;
+}
+
+.btn:hover {
+  color: var(--c-text);
+  box-shadow: inset 0 0 0 1px var(--c-border);
+}
+
+.btn.active {
+  color: var(--c-accent);
+  box-shadow: inset 0 0 0 1px var(--c-accent);
+  background: var(--a-accent-bg);
+  filter: drop-shadow(0 0 10px var(--a-accent-hover));
+}
+
+[data-theme="c"] .btn.active {
+  background: var(--c-accent);
+  color: #0C0A00;
+  filter: none;
+}
+
+.dot {
+  font-size: 9px;
+  font-weight: 800;
+  opacity: .7;
+}
+
+.btn.active .dot { opacity: 1; }
+
+.label {
+  font-size: 9px;
+  letter-spacing: .12em;
+}
+
+/* Hide the label on narrow screens, keep just the A/B/C dot */
+@media (max-width: 640px) {
+  .label { display: none; }
+  .btn { padding: 6px 10px; }
+}

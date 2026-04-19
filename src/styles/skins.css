@@ -1,0 +1,99 @@
+/* ═══════════════════════════════════════════════════════════════
+   SKIN OVERRIDES — EWDS per-theme token overrides.
+   Defaults (Variant A = Cyberpunk v1.0) live in tokens.css.
+   This file overrides selected tokens when [data-theme="b"] or
+   [data-theme="c"] is present on any ancestor (usually the OS root).
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── VARIANT A :: CURRENT CYBERPUNK v1.0 ─────────────────────────
+   No overrides needed. tokens.css defaults ARE Variant A.
+   --cut-win tokens still needed on root to match scaled sizes:
+   ─────────────────────────────────────────────────────────────── */
+
+:root {
+  --cut-win: 16px;
+  --cut-md: 10px;
+  --cut-sm: 8px;
+}
+
+[data-theme="a"] {
+  --cut-win: 16px;
+  --cut-md: 10px;
+  --cut-sm: 8px;
+}
+
+/* ─── VARIANT B :: REFINED CYBERPUNK (OKLCH-tuned) ─────────────── */
+
+[data-theme="b"] {
+  --c-accent:  oklch(72% .15 220);
+  --c-pink:    oklch(60% .12 350);
+  --c-yellow:  oklch(78% .14 75);
+  --c-purple:  oklch(58% .16 285);
+  --c-red:     oklch(60% .20 25);
+  --c-green:   oklch(74% .18 150);
+  --c-bg:      oklch(14% .02 240);
+  --c-surface: oklch(18% .03 245 / .88);
+  --c-surface-hover: oklch(22% .05 245 / .55);
+  --c-text:    oklch(92% .02 240);
+  --c-sub:     oklch(70% .03 240);
+  --c-dim:     oklch(55% .03 240);
+  --c-border:  oklch(70% .12 220 / .18);
+  --c-glass:   oklch(70% .12 220 / .06);
+
+  --a-accent-bg:    oklch(72% .15 220 / .08);
+  --a-pink-bg:      oklch(60% .12 350 / .06);
+  --a-yellow-bg:    oklch(78% .14 75 / .06);
+  --a-purple-bg:    oklch(58% .16 285 / .06);
+  --a-red-bg:       oklch(60% .20 25 / .06);
+  --a-accent-hover: oklch(72% .15 220 / .12);
+  --a-pink-hover:   oklch(60% .12 350 / .1);
+
+  --cut-win: 14px;
+  --cut-md: 8px;
+  --cut-sm: 6px;
+}
+
+/* ─── VARIANT C :: INDUSTRIAL TERMINAL ─────────────────────────── */
+
+[data-theme="c"] {
+  --c-accent:  #FF8800;        /* terminal amber primary */
+  --c-pink:    #D4571F;        /* muted ember, alerts only */
+  --c-yellow:  #FFB000;
+  --c-purple:  #9A8F7D;        /* retired; map to muted */
+  --c-red:     #D4571F;
+  --c-green:   #7FB069;        /* muted sage */
+  --c-bg:      #12100E;
+  --c-surface: #1A1714;
+  --c-surface-hover: rgba(212, 183, 127, .06);
+  --c-text:    #E8DFD0;
+  --c-sub:     #9A8F7D;
+  --c-dim:     rgba(232, 223, 208, .5);
+  --c-border:  rgba(212, 183, 127, .22);
+  --c-glass:   rgba(212, 183, 127, .04);
+
+  --a-accent-bg:    rgba(255, 136, 0, .08);
+  --a-pink-bg:      rgba(212, 87, 31, .06);
+  --a-yellow-bg:    rgba(255, 176, 0, .06);
+  --a-purple-bg:    rgba(154, 143, 125, .05);
+  --a-red-bg:       rgba(212, 87, 31, .06);
+  --a-accent-hover: rgba(255, 136, 0, .14);
+  --a-pink-hover:   rgba(212, 87, 31, .1);
+
+  /* Terminal aesthetic: disable cuts via zero-polygon (stays a rectangle) */
+  --cut-win: 0px;
+  --cut-md:  0px;
+  --cut-sm:  0px;
+
+  /* Override typography: mono everywhere */
+  --font-display: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-body:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ─── C overrides for cut polygons — collapse to rectangle ───── */
+
+[data-theme="c"] {
+  --clip-card:       none;
+  --clip-card-inner: none;
+  --clip-button:     none;
+  --clip-button-sm:  none;
+}

@@ -1,0 +1,301 @@
+/* ═══════════════════════════════════════════════════════════════
+   DESKTOP BACKGROUND — per-theme wallpaper stack
+   Each .wpLayer fades in/out based on the [data-theme] ancestor.
+   ═══════════════════════════════════════════════════════════════ */
+
+.surface {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.wpLayer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+
+/* Default (no attribute) = show A */
+:global(html) .wpLayer.wpA { opacity: 1; }
+
+:global([data-theme="a"]) .wpLayer.wpA { opacity: 1; }
+:global([data-theme="a"]) .wpLayer.wpB,
+:global([data-theme="a"]) .wpLayer.wpC { opacity: 0; }
+
+:global([data-theme="b"]) .wpLayer.wpA,
+:global([data-theme="b"]) .wpLayer.wpC { opacity: 0; }
+:global([data-theme="b"]) .wpLayer.wpB { opacity: 1; }
+
+:global([data-theme="c"]) .wpLayer.wpA,
+:global([data-theme="c"]) .wpLayer.wpB { opacity: 0; }
+:global([data-theme="c"]) .wpLayer.wpC { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════════════════
+   VARIANT A — Circuit grid + radial glows + scanline flicker
+   Ported verbatim from the original v1.0 DesktopBackground.
+   ═══════════════════════════════════════════════════════════════ */
+
+.circuitPattern {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 194, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 194, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(rgba(0, 194, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 194, 255, 0.04) 1px, transparent 1px);
+  background-size: 80px 80px, 80px 80px, 20px 20px, 20px 20px;
+  animation: circuitDrift 60s linear infinite;
+}
+
+.evolved .circuitPattern {
+  background-image:
+    linear-gradient(rgba(255, 51, 102, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 51, 102, 0.10) 1px, transparent 1px),
+    linear-gradient(rgba(255, 51, 102, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 51, 102, 0.05) 1px, transparent 1px);
+}
+
+@keyframes circuitDrift {
+  0%   { transform: translate(0, 0); }
+  100% { transform: translate(80px, 80px); }
+}
+
+.radialCyan {
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  left: 10%;
+  top: 70%;
+  background: radial-gradient(ellipse, rgba(0, 194, 255, 0.06) 0%, transparent 70%);
+}
+
+.evolved .radialCyan {
+  background: radial-gradient(ellipse, rgba(255, 51, 102, 0.08) 0%, transparent 70%);
+}
+
+.radialPink {
+  position: absolute;
+  width: 50%;
+  height: 50%;
+  right: 5%;
+  top: 10%;
+  background: radial-gradient(ellipse, rgba(240, 0, 184, 0.04) 0%, transparent 70%);
+}
+
+.evolved .radialPink {
+  background: radial-gradient(ellipse, rgba(0, 194, 255, 0.06) 0%, transparent 70%);
+}
+
+.scanlineOverlay {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 194, 255, 0.005) 3px,
+    rgba(0, 194, 255, 0.005) 6px
+  );
+  animation: scanFlicker 6s infinite;
+  opacity: 0.5;
+}
+
+.evolved .scanlineOverlay {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(255, 51, 102, 0.008) 3px,
+    rgba(255, 51, 102, 0.008) 6px
+  );
+  opacity: 0.4;
+}
+
+@keyframes scanFlicker {
+  0%   { opacity: 1; }
+  5%   { opacity: 0.4; }
+  6%   { opacity: 1; }
+  15%  { opacity: 0.7; }
+  16%  { opacity: 1; }
+  50%  { opacity: 0.85; }
+  70%  { opacity: 0.35; }
+  71%  { opacity: 0.9; }
+  100% { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VARIANT B — Refined Cyberpunk
+   Kanji 層重 + warm hanko stamp + mono caption strip
+   ═══════════════════════════════════════════════════════════════ */
+
+.wpB {
+  background:
+    radial-gradient(1200px 700px at 70% 0%, oklch(30% .08 220 / .35), transparent 60%),
+    linear-gradient(180deg, oklch(10% .02 240) 0%, oklch(14% .03 240) 100%);
+}
+
+.gridLines {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,.02) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.kanji {
+  position: absolute;
+  right: 6%;
+  bottom: 12%;
+  font-family: 'Noto Serif JP', 'Yu Mincho', serif;
+  font-weight: 700;
+  font-size: clamp(220px, 24vw, 360px);
+  color: oklch(72% .15 220 / .08);
+  line-height: .9;
+  letter-spacing: -.04em;
+  writing-mode: vertical-rl;
+  user-select: none;
+}
+
+.hanko {
+  position: absolute;
+  left: 42%;
+  top: 48%;
+  width: 64px;
+  height: 64px;
+  background: oklch(55% .17 35);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Noto Serif JP', serif;
+  font-weight: 700;
+  color: #1C1206;
+  font-size: 28px;
+  transform: rotate(-6deg);
+  opacity: .85;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .3);
+}
+
+.captionStrip {
+  position: absolute;
+  /* Shifted right past the icon column (icons occupy ~0-300px) */
+  left: 340px;
+  top: 32px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: oklch(60% .03 240);
+  line-height: 1.9;
+}
+
+.captionStrip b {
+  color: oklch(78% .14 75);
+  font-weight: 500;
+}
+
+.stationTag {
+  position: absolute;
+  right: 32px;
+  /* Pushed below SkinToggle pill which floats top-right */
+  top: 68px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: oklch(60% .03 240);
+  text-align: right;
+  line-height: 1.8;
+}
+
+.stationTag b {
+  color: oklch(92% .02 240);
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VARIANT C — Industrial Terminal
+   ASCII grid + giant terminal clock + three-column HUD strip
+   ═══════════════════════════════════════════════════════════════ */
+
+.wpC {
+  background: #12100E;
+}
+
+.asciiGrid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.cornerMark {
+  position: absolute;
+  top: 16px;
+  /* Shifted right past the icon column */
+  left: 340px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #9A8F7D;
+  letter-spacing: .06em;
+}
+
+.cornerMark b {
+  color: #FF8800;
+  font-weight: 500;
+}
+
+.terminalClock {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+  color: rgba(255, 136, 0, .22);
+  font-size: clamp(80px, 10vw, 140px);
+  letter-spacing: -.02em;
+  line-height: 1;
+  text-align: center;
+  user-select: none;
+}
+
+.terminalClock small {
+  display: block;
+  font-size: 14px;
+  letter-spacing: .22em;
+  text-align: center;
+  margin-top: 12px;
+  color: #9A8F7D;
+}
+
+.hudStrip {
+  position: absolute;
+  /* Shifted right past the icon column; clear of bottom-left icons */
+  left: 340px;
+  right: 24px;
+  bottom: calc(48px + 20px); /* taskbar height + gutter */
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 32px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #9A8F7D;
+  line-height: 1.75;
+  letter-spacing: .02em;
+}
+
+.hudStrip b {
+  display: block;
+  color: #FF8800;
+  font-weight: 500;
+  margin-bottom: 4px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}

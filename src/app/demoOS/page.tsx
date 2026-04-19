@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect, createContext, useContext, useMemo } from 'react';
+import { useState, useCallback, useRef, useEffect, useContext, useMemo } from 'react';
 import styles from './page.module.css';
 import { playlist as generatedPlaylist } from '@/constants/playlist';
 import QuestChat from '@/components/QuestChat/QuestChat';
@@ -9,6 +9,30 @@ import DesktopContextMenu from '@/components/DesktopContextMenu/DesktopContextMe
 import SignalSync from '@/components/SignalSync/SignalSync';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import {
+  APP_REGISTRY,
+  STANDARD_IDS,
+  TASKBAR_H,
+  type WindowState,
+} from '@/constants/appRegistry';
+import {
+  DemoOSProviders,
+  EvolutionContext,
+  QuestContext,
+  AvatarContext,
+  type EvolutionState,
+  type QuestState,
+  type AvatarState,
+} from '@/context/DemoOSContexts';
+import { useWindowManager } from '@/hooks/useWindowManager';
+import NotificationToast from '@/components/NotificationToast/NotificationToast';
+import BootSequence from '@/components/BootSequence/BootSequence';
+import DesktopBackground from '@/components/DesktopBackground/DesktopBackground';
+import DesktopIcon from '@/components/DesktopIcon/DesktopIcon';
+import QuestFileIcon, { type QuestFile } from '@/components/QuestFileIcon/QuestFileIcon';
+import Window from '@/components/Window/Window';
+import SkinToggle from '@/components/SkinToggle/SkinToggle';
+import { SkinProvider, useSkin } from '@/context/SkinContext';
 
 /* ═══════════════════════════════════════════════════════════════
    AUDIO TYPES — normalise the auto-generated playlist
@@ -24,165 +48,10 @@ const normalizeTrack = (t: RawTrack): NormTrack => ({
 });
 
 /* ═══════════════════════════════════════════════════════════════
-   TYPES
-   ═══════════════════════════════════════════════════════════════ */
-
-type AppState = 'available' | 'locked' | 'ghosted' | 'hidden';
-
-interface AppManifest {
-  id: string;
-  label: string;
-  icon: string;
-  minWidth: number;
-  minHeight: number;
-  defaultWidth: number;
-  defaultHeight: number;
-  state: AppState;
-  lockMessage?: string;
-  hasNotification?: boolean;
-  syncGated?: number; // sync threshold to unlock
-  /** S³ tier — triggers particle-style icon rendering */
-  tier?: 'gener8' | 'daw' | 'vid' | 'styleforge';
-}
-
-interface WindowState {
-  id: string;
-  appId: string;
-  title: string;
-  icon: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  minWidth: number;
-  minHeight: number;
-  zIndex: number;
-  isMinimized: boolean;
-  isMaximized: boolean;
-  preMaxBounds?: { x: number; y: number; width: number; height: number };
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   EVOLUTION CONTEXT — 2026 ↔ Year 555 (2589 CE)
-   Canon: Year 0 = 2034, Game Present = Year 555 = 2589 CE
-   ═══════════════════════════════════════════════════════════════ */
-
-interface EvolutionState {
-  era: '2026' | 'year555';
-  syncValue: number;
-  bridgeLevel: number;
-}
-
-const EvolutionContext = createContext<EvolutionState>({
-  era: '2026', syncValue: 375, bridgeLevel: 3,
-});
-
-/* ═══════════════════════════════════════════════════════════════
-   QUEST CONTEXT — Shared between DemoOS and QuestChat
-   Allows AppContent to access quest callbacks and triggers
-   without prop drilling through Window components.
-   ═══════════════════════════════════════════════════════════════ */
-
-interface QuestState {
-  callbacks: QuestCallbacks;
-  externalTrigger: string;
-  questPhase: string;
-  desktopFiles: { name: string; icon: string; renamed?: boolean }[];
-}
-
-const QuestContext = createContext<QuestState | null>(null);
-
-/* ═══════════════════════════════════════════════════════════════
-   AVATAR CONTEXT — Character Studio integration (replaced Avaturn)
-   GLB blob URL is created from ArrayBuffer received via postMessage
-   from the Character Studio iframe.
-   ═══════════════════════════════════════════════════════════════ */
-
-interface AvatarState {
-  glbUrl: string | null;
-  mode: 'create' | 'preview';
-  setMode: (m: 'create' | 'preview') => void;
-  onAvatarExported: (glbArrayBuffer: ArrayBuffer) => void;
-}
-
-const AvatarContext = createContext<AvatarState | null>(null);
-
-/* ═══════════════════════════════════════════════════════════════
-   APP REGISTRY — Your Desktop in 2026
-   Standard OS apps + installed Strands software
-
-   DEMO STAGING NOTE: This demoOS shows items UNLOCKED that would
-   normally require completing the quest line to access. The point
-   is wow factor — investors/visitors see the full capability without
-   having to play through the onboarding. SoundWave (ACE Step) and
-   other sync-gated/locked apps are set to 'available' here for demo.
-   In the real game, these gate behind Bridge Levels and Sync thresholds.
-   ═══════════════════════════════════════════════════════════════ */
-
-const APP_REGISTRY: AppManifest[] = [
-  // ── S³ Suite — particle-style branded icons (top of grid) ──
-  { id: 'soundwave',     label: 'Gener8',                icon: '🎵', minWidth: 480, minHeight: 600, defaultWidth: 520, defaultHeight: 640, state: 'available', tier: 'gener8' },
-  { id: 's3-daw',        label: 'DAW',                   icon: '🎛️', minWidth: 480, minHeight: 600, defaultWidth: 520, defaultHeight: 640, state: 'locked', tier: 'daw', lockMessage: 'S³ DAW — Coming Soon to Everywear' },
-  { id: 's3-vid',        label: 'Vid',                   icon: '🎬', minWidth: 480, minHeight: 600, defaultWidth: 520, defaultHeight: 640, state: 'locked', tier: 'vid', lockMessage: 'S³ Vid — Coming Soon to Everywear' },
-  { id: 'library',       label: 'Strands Library',       icon: '📚', minWidth: 400, minHeight: 500, defaultWidth: 500, defaultHeight: 600, state: 'available' },
-
-  // ── Standard OS ──
-  { id: 'my-computer',   label: 'My Computer',         icon: '💻', minWidth: 400, minHeight: 360, defaultWidth: 480, defaultHeight: 420, state: 'available' },
-  { id: 'my-pictures',   label: 'My Pictures',          icon: '🖼️', minWidth: 360, minHeight: 340, defaultWidth: 420, defaultHeight: 400, state: 'available' },
-  { id: 'my-videos',     label: 'My Videos',            icon: '🎬', minWidth: 360, minHeight: 340, defaultWidth: 420, defaultHeight: 400, state: 'available' },
-  { id: 'music-player',  label: 'Music Player',          icon: '🎶', minWidth: 300, minHeight: 360, defaultWidth: 380, defaultHeight: 520, state: 'available' },
-
-  // ── Strands installed apps — available ──
-  { id: 'signal-reg',    label: 'Signal Reg',           icon: '📡', minWidth: 320, minHeight: 400, defaultWidth: 380, defaultHeight: 460, state: 'available' },
-  { id: 'messages',      label: 'Messages',             icon: '💬', minWidth: 400, minHeight: 500, defaultWidth: 500, defaultHeight: 700, state: 'available', hasNotification: true },
-  { id: 'bridge-app',    label: 'CPU-VPU Bridge',       icon: '🌉', minWidth: 400, minHeight: 480, defaultWidth: 440, defaultHeight: 520, state: 'available' },
-  { id: 'codex',         label: 'The Codex',            icon: '📖', minWidth: 400, minHeight: 500, defaultWidth: 500, defaultHeight: 600, state: 'available' },
-  { id: 'signal-monitor',label: 'Signal Monitor',       icon: '📺', minWidth: 440, minHeight: 500, defaultWidth: 480, defaultHeight: 540, state: 'available' },
-  { id: 'mymories',      label: 'Mymories',             icon: '🧠', minWidth: 360, minHeight: 440, defaultWidth: 400, defaultHeight: 480, state: 'available' },
-  { id: 'myconsent',     label: 'MyConsent',             icon: '🛡️', minWidth: 400, minHeight: 400, defaultWidth: 460, defaultHeight: 480, state: 'available' },
-
-  // ── Avatar Creator — Character Studio integration ──
-  { id: 'avatar-creator', label: 'Avatar Creator', icon: '🧬', minWidth: 520, minHeight: 600, defaultWidth: 680, defaultHeight: 720, state: 'available' },
-
-  // ── Sync-gated — show progress bar until threshold ──
-  { id: 'signal-training', label: 'Signal Training',    icon: '🎯', minWidth: 640, minHeight: 480, defaultWidth: 800, defaultHeight: 600, state: 'locked', lockMessage: 'Signal Training — Coming Soon' },
-  { id: 'arcade-2042',   label: 'Arcade 2042',          icon: '🕹️', minWidth: 480, minHeight: 620, defaultWidth: 500, defaultHeight: 680, state: 'available' },
-  { id: 'holo-lock',     label: 'Circuit Sync',          icon: '🔓', minWidth: 520, minHeight: 500, defaultWidth: 540, defaultHeight: 540, state: 'available' },
-
-  // ── Locked apps — visible but inaccessible ──
-  { id: 'voice-sync',    label: 'Voice Sync',           icon: '🎙️', minWidth: 400, minHeight: 300, defaultWidth: 400, defaultHeight: 340, state: 'locked', lockMessage: 'Requires Signal Registration' },
-  { id: 'cipher-tool',   label: 'Cipher Tool',          icon: '🔐', minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'locked', lockMessage: 'Requires Escalation Protocol' },
-  { id: 'trading-post',  label: 'Trading Post',         icon: '💰', minWidth: 360, minHeight: 440, defaultWidth: 400, defaultHeight: 480, state: 'locked', lockMessage: 'Bridge Level 5 Required' },
-  { id: 'signal-rush',   label: 'Signal Rush',          icon: '🚀', minWidth: 360, minHeight: 600, defaultWidth: 380, defaultHeight: 640, state: 'locked', lockMessage: 'Coming Soon' },
-
-  // ── Hidden — dashed borders, glitch teasers ──
-  { id: 'kasai-terminal', label: '???',                 icon: '?',  minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'hidden' },
-  { id: 'portal',         label: 'The Portal',          icon: '🌀', minWidth: 400, minHeight: 400, defaultWidth: 440, defaultHeight: 440, state: 'hidden' },
-  // ACE Studio is now 'soundwave' — promoted to available for demo wow factor
-];
-
-/* ═══════════════════════════════════════════════════════════════
-   NOTIFICATION TOAST — pops up when clicking locked icons
-   ═══════════════════════════════════════════════════════════════ */
-
-function NotificationToast({ message, toastKey, onDismiss }: { message: string; toastKey: number; onDismiss: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onDismiss, 3000);
-    return () => clearTimeout(t);
-  }, [toastKey, onDismiss]);
-
-  return (
-    <div className={styles.toast} key={toastKey}>
-      <span className={styles.toastIcon}>🔒</span>
-      <span className={styles.toastMsg}>{message}</span>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   SOUNDWAVE PLAYER — Real audio player using the Strands playlist
+   MUSIC PLAYER — Real audio player using the Strands playlist.
    Self-contained component with its own audio element.
    Audio persists when window is minimized (CSS hidden, not unmounted).
+   Distinct from Gener8 (which is the AI music *generator* studio).
    ═══════════════════════════════════════════════════════════════ */
 
 function MusicPlayerContent() {
@@ -279,7 +148,7 @@ function MusicPlayerContent() {
   if (!track || tracks.length === 0) {
     return (
       <div className={styles.appBody}>
-        <div className={styles.appHeader}>STRANDS SOUND WAVE</div>
+        <div className={styles.appHeader}>STRANDS MUSIC</div>
         <div className={styles.placeholderContent}>
           <div className={styles.placeholderIcon}>🎵</div>
           <div>No tracks found.</div>
@@ -292,7 +161,7 @@ function MusicPlayerContent() {
 
   return (
     <div className={styles.appBody}>
-      <div className={styles.appHeader}>STRANDS SOUND WAVE</div>
+      <div className={styles.appHeader}>STRANDS MUSIC</div>
       <audio ref={audioRef} preload="metadata">
         <source src={track.file} type="audio/mpeg" />
       </audio>
@@ -371,10 +240,10 @@ function MusicPlayerContent() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SOUNDWAVE LAUNCHER — Preliminary screen: run in-window or new tab
+   GENER8 LAUNCHER — Preliminary screen: run in-window or new tab
    ═══════════════════════════════════════════════════════════════ */
 
-function SoundWaveLauncher() {
+function Gener8Launcher() {
   const [mode, setMode] = useState<'choose' | 'iframe'>('choose');
 
   if (mode === 'iframe') {
@@ -912,8 +781,8 @@ function AppContent({ appId }: { appId: string }) {
     case 'music-player':
       return <MusicPlayerContent />;
 
-    case 'soundwave':
-      return <SoundWaveLauncher />;
+    case 'gener8':
+      return <Gener8Launcher />;
 
     case 'avatar-creator': {
       // eslint-disable-next-line react-hooks/rules-of-hooks, no-case-declarations
@@ -1295,293 +1164,6 @@ function AppContent({ appId }: { appId: string }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   WINDOW COMPONENT
-   ═══════════════════════════════════════════════════════════════ */
-
-interface WindowProps {
-  win: WindowState;
-  isActive: boolean;
-  onFocus: () => void;
-  onClose: () => void;
-  onMinimize: () => void;
-  onMaximize: () => void;
-  onMove: (x: number, y: number) => void;
-  onResize: (w: number, h: number, x?: number, y?: number) => void;
-  children: React.ReactNode;
-}
-
-const TASKBAR_H = 48;
-
-function Window({ win, isActive, onFocus, onClose, onMinimize, onMaximize, onMove, onResize, children }: WindowProps) {
-  const dragRef = useRef<{ startX: number; startY: number; winX: number; winY: number } | null>(null);
-  const resizeRef = useRef<{ startX: number; startY: number; startW: number; startH: number; startWinX: number; startWinY: number; edges: string } | null>(null);
-
-  const handleDragStart = useCallback((e: React.PointerEvent) => {
-    if (win.isMaximized) return;
-    e.preventDefault();
-    onFocus();
-    dragRef.current = { startX: e.clientX, startY: e.clientY, winX: win.x, winY: win.y };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }, [win.x, win.y, win.isMaximized, onFocus]);
-
-  const handleDragMove = useCallback((e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    const dx = e.clientX - dragRef.current.startX;
-    const dy = e.clientY - dragRef.current.startY;
-    onMove(
-      Math.max(0, Math.min(window.innerWidth - 100, dragRef.current.winX + dx)),
-      Math.max(0, Math.min(window.innerHeight - TASKBAR_H - 36, dragRef.current.winY + dy)),
-    );
-  }, [onMove]);
-
-  const handleDragEnd = useCallback(() => { dragRef.current = null; }, []);
-
-  const handleResizeStart = useCallback((e: React.PointerEvent, edges: string) => {
-    if (win.isMaximized) return;
-    e.preventDefault(); e.stopPropagation(); onFocus();
-    resizeRef.current = { startX: e.clientX, startY: e.clientY, startW: win.width, startH: win.height, startWinX: win.x, startWinY: win.y, edges };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }, [win.width, win.height, win.x, win.y, win.isMaximized, onFocus]);
-
-  const handleResizeMove = useCallback((e: React.PointerEvent) => {
-    if (!resizeRef.current) return;
-    const r = resizeRef.current;
-    const dx = e.clientX - r.startX;
-    const dy = e.clientY - r.startY;
-    let newW = r.startW, newH = r.startH, newX = r.startWinX, newY = r.startWinY;
-    if (r.edges.includes('e')) newW = Math.max(win.minWidth, r.startW + dx);
-    if (r.edges.includes('s')) newH = Math.max(win.minHeight, r.startH + dy);
-    if (r.edges.includes('w')) { const d = Math.min(dx, r.startW - win.minWidth); newW = r.startW - d; newX = r.startWinX + d; }
-    if (r.edges.includes('n')) { const d = Math.min(dy, r.startH - win.minHeight); newH = r.startH - d; newY = r.startWinY + d; }
-    onResize(newW, newH, newX, newY);
-  }, [win.minWidth, win.minHeight, onResize]);
-
-  const handleResizeEnd = useCallback(() => { resizeRef.current = null; }, []);
-
-  // Clamp top so the title bar is ALWAYS visible — never let a window escape above viewport
-  const clampedY = Math.max(0, win.y);
-  const windowStyle: React.CSSProperties = win.isMinimized
-    ? { display: 'none' }
-    : win.isMaximized
-    ? { left: 0, top: 0, width: '100%', height: `calc(100vh - ${TASKBAR_H}px)`, zIndex: win.zIndex }
-    : { left: win.x, top: clampedY, width: win.width, height: win.height, zIndex: win.zIndex };
-
-  const edges = ['n','ne','e','se','s','sw','w','nw'];
-
-  return (
-    <div className={`${styles.window} ${isActive ? styles.windowActive : ''}`} style={windowStyle} onPointerDown={onFocus}>
-      {!win.isMaximized && edges.map(edge => (
-        <div key={edge} className={`${styles.resizeHandle} ${styles[`resize_${edge}`]}`}
-          onPointerDown={(e) => handleResizeStart(e, edge)}
-          onPointerMove={handleResizeMove}
-          onPointerUp={handleResizeEnd} />
-      ))}
-      <div className={styles.titleBar}
-        onPointerDown={handleDragStart} onPointerMove={handleDragMove}
-        onPointerUp={handleDragEnd} onDoubleClick={onMaximize}>
-        <span className={styles.titleIcon}>{win.icon}</span>
-        <span className={styles.titleText}>{win.title}</span>
-        <div className={styles.windowControls}>
-          <button className={styles.winBtn} onClick={(e) => { e.stopPropagation(); onMinimize(); }}><span className={styles.winBtnMin}>─</span></button>
-          <button className={styles.winBtn} onClick={(e) => { e.stopPropagation(); onMaximize(); }}><span className={styles.winBtnMax}>□</span></button>
-          <button className={`${styles.winBtn} ${styles.winBtnClose}`} onClick={(e) => { e.stopPropagation(); onClose(); }}><span>×</span></button>
-        </div>
-      </div>
-      <div className={styles.windowContent}>{children}</div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   DESKTOP ICON — with notification popup on locked
-   ═══════════════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════════
-   PARTICLE ICON — Canvas-rendered 3D particle field
-   S³ tier apps: show "S³" text with tier color
-   All other apps: show emoji glyph with per-app color
-   ═══════════════════════════════════════════════════════════════ */
-
-const APP_ICON_COLORS: Record<string, [number, number, number]> = {
-  // S³ Suite
-  gener8:     [0, 194, 255],
-  daw:        [168, 85, 247],
-  vid:        [240, 0, 184],
-  styleforge: [245, 158, 11],
-  // Standard OS
-  'my-computer':    [100, 160, 230],
-  'my-pictures':    [220, 140, 60],
-  'my-videos':      [200, 80, 160],
-  'music-player':   [80, 200, 160],
-  // Strands apps
-  'library':        [0, 194, 255],
-  'signal-reg':     [60, 180, 220],
-  'messages':       [100, 220, 140],
-  'bridge-app':     [160, 120, 240],
-  'codex':          [200, 170, 80],
-  'signal-monitor': [80, 200, 200],
-  'mymories':       [220, 100, 200],
-  'myconsent':      [100, 180, 100],
-  'avatar-creator': [0, 220, 180],
-  // Sync-gated / locked
-  'signal-training':[220, 80, 80],
-  'arcade-2042':    [255, 140, 0],
-  'holo-lock':      [140, 200, 255],
-  'voice-sync':     [180, 100, 220],
-  'cipher-tool':    [200, 60, 60],
-  'trading-post':   [240, 200, 60],
-  'signal-rush':    [255, 100, 60],
-};
-
-function ParticleIcon({ appId, tier, emoji }: { appId: string; tier?: string; emoji: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const SIZE = 112;
-    canvas.width = SIZE;
-    canvas.height = SIZE;
-
-    const isS3 = !!tier;
-    const rgb = (tier ? APP_ICON_COLORS[tier] : APP_ICON_COLORS[appId]) || [120, 140, 180];
-    const particleCount = isS3 ? 40 : 28;
-
-    interface P { x: number; y: number; s: number; a: number; vx: number; vy: number; d: number; }
-    const particles: P[] = [];
-    for (let i = 0; i < particleCount; i++) {
-      particles.push({
-        x: Math.random() * SIZE, y: Math.random() * SIZE,
-        s: Math.random() * 1.5 + 0.4, a: Math.random() * 0.4 + 0.1,
-        vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
-        d: Math.random() * Math.PI * 2,
-      });
-    }
-
-    let t = 0;
-    function animate() {
-      t += 0.02;
-      ctx!.clearRect(0, 0, SIZE, SIZE);
-      ctx!.save();
-      ctx!.beginPath();
-      ctx!.roundRect(0, 0, SIZE, SIZE, 24);
-      ctx!.clip();
-
-      // Background
-      ctx!.fillStyle = '#0a0a12';
-      ctx!.fillRect(0, 0, SIZE, SIZE);
-
-      // Radial glow
-      const grad = ctx!.createRadialGradient(SIZE / 2, SIZE / 2, 0, SIZE / 2, SIZE / 2, SIZE * 0.6);
-      grad.addColorStop(0, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${isS3 ? 0.12 : 0.08})`);
-      grad.addColorStop(1, 'transparent');
-      ctx!.fillStyle = grad;
-      ctx!.fillRect(0, 0, SIZE, SIZE);
-
-      // Particles
-      for (const p of particles) {
-        p.x += p.vx + Math.sin(t + p.d) * 0.1;
-        p.y += p.vy + Math.cos(t * 0.8 + p.d) * 0.1;
-        if (p.x < 0) p.x = SIZE; if (p.x > SIZE) p.x = 0;
-        if (p.y < 0) p.y = SIZE; if (p.y > SIZE) p.y = 0;
-        const pa = p.a * (0.6 + 0.4 * Math.sin(t * 2 + p.d));
-        ctx!.beginPath(); ctx!.arc(p.x, p.y, p.s * 3, 0, Math.PI * 2);
-        ctx!.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${pa * 0.2})`; ctx!.fill();
-        ctx!.beginPath(); ctx!.arc(p.x, p.y, p.s, 0, Math.PI * 2);
-        ctx!.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${pa})`; ctx!.fill();
-      }
-
-      // Connection lines
-      ctx!.lineWidth = 0.3;
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
-          if (dx * dx + dy * dy < 900) {
-            ctx!.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.06)`;
-            ctx!.beginPath(); ctx!.moveTo(particles[i].x, particles[i].y);
-            ctx!.lineTo(particles[j].x, particles[j].y); ctx!.stroke();
-          }
-        }
-      }
-
-      // Centre glyph
-      if (isS3) {
-        // S³ branded text
-        ctx!.font = '700 32px "Inter", -apple-system, sans-serif';
-        ctx!.textAlign = 'center'; ctx!.textBaseline = 'middle';
-        ctx!.shadowColor = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
-        ctx!.shadowBlur = 12;
-        ctx!.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.8)`;
-        ctx!.fillText('S\u00B3', SIZE / 2, SIZE / 2);
-        ctx!.shadowBlur = 0;
-        ctx!.fillStyle = 'rgba(255,255,255,0.9)';
-        ctx!.fillText('S\u00B3', SIZE / 2, SIZE / 2);
-      } else {
-        // Emoji glyph with glow
-        ctx!.font = '36px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
-        ctx!.textAlign = 'center'; ctx!.textBaseline = 'middle';
-        ctx!.shadowColor = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
-        ctx!.shadowBlur = 10;
-        ctx!.fillText(emoji, SIZE / 2, SIZE / 2);
-        ctx!.shadowBlur = 0;
-        ctx!.fillText(emoji, SIZE / 2, SIZE / 2);
-      }
-
-      // Border
-      ctx!.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.15)`;
-      ctx!.lineWidth = 1;
-      ctx!.beginPath(); ctx!.roundRect(0.5, 0.5, SIZE - 1, SIZE - 1, 24); ctx!.stroke();
-      ctx!.restore();
-
-      animRef.current = requestAnimationFrame(animate);
-    }
-    animate();
-    return () => cancelAnimationFrame(animRef.current);
-  }, [appId, tier, emoji]);
-
-  return <canvas ref={canvasRef} style={{ width: 56, height: 56, imageRendering: 'auto' }} />;
-}
-
-function DesktopIcon({ app, onOpen, onLockedClick }: { app: AppManifest; onOpen: () => void; onLockedClick: (msg: string) => void }) {
-  if (app.state === 'hidden') {
-    return (
-      <div className={styles.iconSlotHidden}>
-        {app.id === 'kasai-terminal' && <span className={styles.glitchChar}>?</span>}
-      </div>
-    );
-  }
-
-  const isLocked = app.state === 'locked';
-
-  return (
-    <button
-      className={`${styles.desktopIcon} ${isLocked ? styles.desktopIconLocked : ''}`}
-      onDoubleClick={() => {
-        if (isLocked) {
-          onLockedClick(app.lockMessage || 'Access denied');
-        } else {
-          onOpen();
-        }
-      }}
-      onClick={() => {
-        if (isLocked) onLockedClick(app.lockMessage || 'Access denied');
-      }}
-    >
-      <div className={styles.iconGlyph} style={{ background: 'none', border: 'none' }}>
-        <ParticleIcon appId={app.id} tier={app.tier} emoji={app.icon} />
-        {isLocked && <div className={styles.lockOverlay}>🔒</div>}
-      </div>
-      <div className={styles.iconLabel}>{app.label}</div>
-      {app.hasNotification && <div className={styles.notificationDot} />}
-    </button>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
    TASKBAR — with real date + time (SGT), narrative date shift
    ═══════════════════════════════════════════════════════════════ */
 
@@ -1648,63 +1230,13 @@ function Taskbar({
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   BOOT SEQUENCE
-   ═══════════════════════════════════════════════════════════════ */
-
-function BootSequence({ onComplete }: { onComplete: () => void }) {
-  const [lines, setLines] = useState<string[]>([]);
-  const bootLines = [
-    'STRANDS OS v2026.3 — Initializing...',
-    'Loading kernel modules...',
-    'Signal substrate: DETECTED',
-    'CPU-VPU Bridge: CALIBRATING',
-    'Temporal alignment: LOCKED',
-    'LARP Protocol: ACTIVE',
-    'Desktop environment: LOADING',
-    'Window manager: READY',
-    '...',
-    '◈ SIGNAL ACTIVE — Welcome, Agent.',
-  ];
-
-  useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < bootLines.length) {
-        setLines(prev => [...prev, bootLines[i]]);
-        i++;
-      } else {
-        clearInterval(interval);
-        setTimeout(onComplete, 600);
-      }
-    }, 250);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return (
-    <div className={styles.bootScreen}>
-      <div className={styles.bootTerminal}>
-        {lines.map((line, i) => (
-          <div key={i} className={styles.bootLine}><span className={styles.bootPrompt}>&gt;</span> {line}</div>
-        ))}
-        <div className={styles.bootCursor}>_</div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
    MAIN DESKTOP OS PAGE
    ═══════════════════════════════════════════════════════════════ */
 
 // Standard OS app IDs for filtering (stable constant)
-const STANDARD_IDS: string[] = ['my-computer','my-pictures','my-videos','music-player'];
-
-export default function DemoOSPage() {
+function DemoOSBody() {
+  const { skin } = useSkin();
   const [booted, setBooted] = useState(false);
-  const [windows, setWindows] = useState<WindowState[]>([]);
-  const [nextZ, setNextZ] = useState(100);
-  const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; key: number } | null>(null);
   const toastCounter = useRef(0);
   const showToast = useCallback((msg: string) => {
@@ -1712,7 +1244,21 @@ export default function DemoOSPage() {
     setToast({ msg, key: toastCounter.current });
   }, []);
   const [evo, setEvo] = useState<EvolutionState>({ era: '2026', syncValue: 375, bridgeLevel: 3 });
-  const windowCounter = useRef(0);
+
+  /* ── Window manager — owns windows, zIndex, drag/resize/min/max/close/taskbar ── */
+  const {
+    windows,
+    activeWindowId,
+    openWindow,
+    spawnDynamicWindow,
+    focusWindow,
+    closeWindow,
+    minimizeWindow,
+    maximizeWindow,
+    moveWindow,
+    resizeWindow,
+    handleTaskbarClick,
+  } = useWindowManager({ showToast });
 
   /* ── Quest State ── */
   const [questPhase, setQuestPhase] = useState('intro');
@@ -1723,32 +1269,6 @@ export default function DemoOSPage() {
   /* ── Avatar State ── */
   const [avatarGlbUrl, setAvatarGlbUrl] = useState<string | null>(null);
   const [avatarCreatorMode, setAvatarCreatorMode] = useState<'create' | 'preview'>('create');
-
-  // Spawn a dynamic window (for quest-triggered windows like Signal Sync, Video)
-  const spawnDynamicWindow = useCallback((appId: string, title: string, icon: string, width = 520, height = 500) => {
-    // Check if already open
-    const existing = windows.find(w => w.appId === appId);
-    if (existing) {
-      setNextZ(z => z + 1);
-      setWindows(prev => prev.map(w => w.id === existing.id ? { ...w, zIndex: nextZ + 1, isMinimized: false } : w));
-      setActiveWindowId(existing.id);
-      return;
-    }
-    windowCounter.current++;
-    const id = `win-${windowCounter.current}`;
-    const ox = (windowCounter.current % 6) * 40;
-    const oy = (windowCounter.current % 4) * 40;
-    const newWin: WindowState = {
-      id, appId, title, icon,
-      x: 200 + ox, y: 60 + oy,
-      width, height,
-      minWidth: 400, minHeight: 360,
-      zIndex: nextZ + 1, isMinimized: false, isMaximized: false,
-    };
-    setNextZ(z => z + 1);
-    setWindows(prev => [...prev, newWin]);
-    setActiveWindowId(id);
-  }, [windows, nextZ]);
 
   // Quest callbacks — these bridge the QuestChat to the DemoOS desktop
   const questCallbacks = useMemo<QuestCallbacks>(() => ({
@@ -1773,14 +1293,8 @@ export default function DemoOSPage() {
     onOpenGame: (gameId: string) => {
       const gameApp = APP_REGISTRY.find(a => a.id === gameId);
       if (gameApp) {
-        const existing = windows.find(w => w.appId === gameId);
-        if (existing) {
-          setNextZ(z => z + 1);
-          setWindows(prev => prev.map(w => w.id === existing.id ? { ...w, zIndex: nextZ + 1, isMinimized: false } : w));
-          setActiveWindowId(existing.id);
-        } else {
-          spawnDynamicWindow(gameId, gameApp.label, gameApp.icon, gameApp.defaultWidth, gameApp.defaultHeight);
-        }
+        // spawnDynamicWindow handles the existing-window case internally (focuses + un-minimises).
+        spawnDynamicWindow(gameId, gameApp.label, gameApp.icon, gameApp.defaultWidth, gameApp.defaultHeight);
       }
     },
     onOpenCircuitSync: () => {
@@ -1806,7 +1320,7 @@ export default function DemoOSPage() {
       }
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [showToast, spawnDynamicWindow, windows, nextZ]);
+  }), [showToast, spawnDynamicWindow]);
 
   // Quest context value
   const questContextValue = useMemo<QuestState>(() => ({
@@ -1862,121 +1376,6 @@ export default function DemoOSPage() {
     );
   }, []);
 
-  const openWindow = useCallback((app: AppManifest) => {
-    const existing = windows.find(w => w.appId === app.id);
-    if (existing) {
-      setNextZ(z => z + 1);
-      setWindows(prev => prev.map(w => w.id === existing.id ? { ...w, zIndex: nextZ + 1, isMinimized: false } : w));
-      setActiveWindowId(existing.id);
-      return;
-    }
-    windowCounter.current++;
-    const id = `win-${windowCounter.current}`;
-
-    // Calculate position - center for Messages app, cascade for others
-    let x: number, y: number;
-    if (app.id === 'messages') {
-      // Center Messages window in viewport
-      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
-      const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
-      x = Math.max(20, (viewportWidth - app.defaultWidth) / 2);
-      y = Math.max(20, (viewportHeight - TASKBAR_H - app.defaultHeight) / 2);
-    } else {
-      // Cascade other windows from top-left
-      const ox = (windowCounter.current % 8) * 30;
-      const oy = (windowCounter.current % 6) * 30;
-      x = 140 + ox;
-      y = 30 + oy;
-    }
-
-    const newWin: WindowState = {
-      id, appId: app.id, title: app.label, icon: app.icon,
-      x, y,
-      width: app.defaultWidth, height: app.defaultHeight,
-      minWidth: app.minWidth, minHeight: app.minHeight,
-      zIndex: nextZ + 1, isMinimized: false, isMaximized: false,
-    };
-    setNextZ(z => z + 1);
-    setWindows(prev => [...prev, newWin]);
-    setActiveWindowId(id);
-  }, [windows, nextZ]);
-
-  const focusWindow = useCallback((id: string) => {
-    setNextZ(z => { setWindows(prev => prev.map(w => w.id === id ? { ...w, zIndex: z + 1 } : w)); return z + 1; });
-    setActiveWindowId(id);
-  }, []);
-
-  const closeWindow = useCallback((id: string) => {
-    setWindows(prev => prev.filter(w => w.id !== id));
-    if (activeWindowId === id) setActiveWindowId(null);
-  }, [activeWindowId]);
-
-  /* ── Listen for game-quit postMessages from iframed games ── */
-  /* Games send their own id (e.g. 'holo-lock', '2042') which won't match
-     the window's generated id. Map known game ids → appIds, then find
-     the window by appId. Falls back to direct id match. */
-  const gameIdToAppId: Record<string, string> = {
-    'holo-lock': 'circuit-sync-quest',
-    '2042': 'arcade-2042',
-    'signal-training': 'signal-training',
-  };
-  useEffect(() => {
-    const handler = (e: MessageEvent) => {
-      if (e.data?.type === 'game-quit' && typeof e.data.id === 'string') {
-        const appId = gameIdToAppId[e.data.id] || e.data.id;
-        const win = windows.find(w => w.appId === appId);
-        if (win) {
-          setWindows(prev => prev.filter(w => w.appId !== appId));
-        } else {
-          closeWindow(e.data.id);
-        }
-      }
-      // Handle game completion — feeds into quest system
-      if (e.data?.type === 'game-complete' && typeof e.data.id === 'string') {
-        const score = e.data.score || 0;
-        console.log(`[DemoOS] Game "${e.data.id}" completed with score: ${score}`);
-        showToast(`SIGNAL TRAINING COMPLETE — Sync score: ${score}`);
-      }
-    };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
-  }, [closeWindow, windows, showToast]);
-
-  const minimizeWindow = useCallback((id: string) => {
-    setWindows(prev => prev.map(w => w.id === id ? { ...w, isMinimized: true } : w));
-    if (activeWindowId === id) setActiveWindowId(null);
-  }, [activeWindowId]);
-
-  const maximizeWindow = useCallback((id: string) => {
-    setWindows(prev => prev.map(w => {
-      if (w.id !== id) return w;
-      if (w.isMaximized) return { ...w, isMaximized: false, x: w.preMaxBounds?.x ?? w.x, y: w.preMaxBounds?.y ?? w.y, width: w.preMaxBounds?.width ?? w.width, height: w.preMaxBounds?.height ?? w.height, preMaxBounds: undefined };
-      return { ...w, isMaximized: true, preMaxBounds: { x: w.x, y: w.y, width: w.width, height: w.height } };
-    }));
-  }, []);
-
-  const moveWindow = useCallback((id: string, x: number, y: number) => {
-    setWindows(prev => prev.map(w => w.id === id ? { ...w, x, y } : w));
-  }, []);
-
-  const resizeWindow = useCallback((id: string, width: number, height: number, x?: number, y?: number) => {
-    setWindows(prev => prev.map(w => {
-      if (w.id !== id) return w;
-      const u: Partial<WindowState> = { width, height };
-      if (x !== undefined) u.x = x;
-      if (y !== undefined) u.y = y;
-      return { ...w, ...u };
-    }));
-  }, []);
-
-  const handleTaskbarClick = useCallback((id: string) => {
-    const win = windows.find(w => w.id === id);
-    if (!win) return;
-    if (win.isMinimized) { setWindows(prev => prev.map(w => w.id === id ? { ...w, isMinimized: false } : w)); focusWindow(id); }
-    else if (activeWindowId === id) minimizeWindow(id);
-    else focusWindow(id);
-  }, [windows, activeWindowId, focusWindow, minimizeWindow]);
-
   if (!booted) return <BootSequence onComplete={() => setBooted(true)} />;
 
   // Separate apps into visible groups
@@ -1985,17 +1384,18 @@ export default function DemoOSPage() {
   const hiddenApps = APP_REGISTRY.filter(a => a.state === 'hidden');
 
   return (
-    <EvolutionContext.Provider value={evo}>
-      <QuestContext.Provider value={questContextValue}>
-      <AvatarContext.Provider value={avatarContextValue}>
-        <div className={`${styles.desktopOS} ${evo.era === 'year555' ? styles.desktopEvolved : ''}`}>
-          {/* Desktop Surface */}
-          <div className={styles.desktopSurface}>
-            <div className={styles.circuitPattern} />
-            <div className={styles.radialCyan} />
-            <div className={styles.radialPink} />
-            <div className={styles.scanlineOverlay} />
+    <DemoOSProviders evolution={evo} quest={questContextValue} avatar={avatarContextValue}>
+      <>
+        <div
+          className={`${styles.desktopOS} ${evo.era === 'year555' ? styles.desktopEvolved : ''}`}
+          data-theme={skin}
+        >
+          {/* Skin toggle — floats top-right above all chrome */}
+          <div className={styles.skinToggleSlot}>
+            <SkinToggle />
           </div>
+          {/* Desktop Surface */}
+          <DesktopBackground evolved={evo.era === 'year555'} />
 
           {/* Workspace — fills space above taskbar */}
           <div className={styles.workspace}>
@@ -2016,42 +1416,22 @@ export default function DemoOSPage() {
 
               {/* Quest dynamic files — materialise during narrative */}
               {desktopFiles.length > 0 && (
-                <>
-                  <div className={styles.iconGroup}>
-                    {desktopFiles.map((file, i) => (
-                      <div
-                        key={`quest-file-${i}`}
-                        className={styles.desktopIcon}
-                        style={{ animation: 'fadeIn 0.5s ease both' }}
-                        onDoubleClick={() => {
-                          if (file.renamed && file.name.endsWith('.mp4')) {
-                            showToast('Signal unstable — use Signal Sync to stabilise playback');
-                          } else {
-                            showToast('File format not recognised. Try renaming it.');
-                          }
-                        }}
-                        onContextMenu={(e) => handleFileContextMenu(e, file.name)}
-                      >
-                        <span className={styles.iconGlyph}>{file.icon}</span>
-                        <span className={styles.iconLabel} style={{
-                          fontSize: '7px',
-                          color: file.renamed ? 'var(--c-accent)' : 'var(--c-pink)',
-                          textShadow: file.renamed ? 'none' : '0 0 6px rgba(240,0,184,0.4)',
-                        }}>
-                          {file.name.length > 20 ? file.name.slice(0, 18) + '...' : file.name}
-                        </span>
-                        {!file.renamed && (
-                          <span style={{
-                            position: 'absolute', top: '4px', right: '4px',
-                            width: '6px', height: '6px', borderRadius: '50%',
-                            background: 'var(--c-pink)', boxShadow: '0 0 6px rgba(240,0,184,0.6)',
-                            animation: 'pinkPulse 2s ease-in-out infinite',
-                          }} />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </>
+                <div className={styles.iconGroup}>
+                  {desktopFiles.map((file, i) => (
+                    <QuestFileIcon
+                      key={`quest-file-${i}`}
+                      file={file}
+                      onOpen={(f: QuestFile) => {
+                        if (f.renamed && f.name.endsWith('.mp4')) {
+                          showToast('Signal unstable — use Signal Sync to stabilise playback');
+                        } else {
+                          showToast('File format not recognised. Try renaming it.');
+                        }
+                      }}
+                      onContextMenu={(e, fileName) => handleFileContextMenu(e, fileName)}
+                    />
+                  ))}
+                </div>
               )}
             </div>
 
@@ -2087,8 +1467,19 @@ export default function DemoOSPage() {
           <Taskbar windows={windows} activeWindowId={activeWindowId}
             onWindowClick={handleTaskbarClick} evo={evo} onToggleEra={toggleEra} />
         </div>
-      </AvatarContext.Provider>
-      </QuestContext.Provider>
-    </EvolutionContext.Provider>
+      </>
+    </DemoOSProviders>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DEFAULT EXPORT — wraps the OS body in SkinProvider so the
+   [data-theme] attribute and skin toggle can drive EWDS variants.
+   ═══════════════════════════════════════════════════════════════ */
+export default function DemoOSPage() {
+  return (
+    <SkinProvider>
+      <DemoOSBody />
+    </SkinProvider>
   );
 }
