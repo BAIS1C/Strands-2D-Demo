@@ -31,10 +31,9 @@
   filter: drop-shadow(0 8px 48px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 16px var(--a-accent-hover, rgba(0, 194, 255, 0.15)));
 }
 
-/* Terminal skin disables the cuts (per canon --cut-win: 0) so this reads as square */
-:global([data-theme="c"]) .window {
-  clip-path: none;
-}
+/* Canon: TR+BL cut-corner polygon holds on ALL Strands windows across every
+   theme. No square-window override. If a skin wants a softer feel the token
+   --cut-win can be tuned per theme, not removed. */
 
 /* ─── TITLE BAR ─── */
 
