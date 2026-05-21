@@ -1,0 +1,16 @@
+
+> strandsnation-xyz@1.0.0 dev
+> npm run generate-playlist && next dev -p 4173
+
+
+> strandsnation-xyz@1.0.0 generate-playlist
+> node scripts/generate-playlist.js
+
+Playlist generated: 15 tracks from public/audio/soundtrack/ (ID3 titles/artists loaded)
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:4173
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1497ms
+[?25h
